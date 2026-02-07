@@ -1,0 +1,538 @@
+import React, { useState, useEffect } from 'react';
+import { Link, router } from '@inertiajs/react';
+import { Shield, LogOut, Plus, Edit, Archive, Eye, Users, Briefcase } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { mockJobs, getJobs } from '@/data/mockData';
+
+export default function JobManagement() {
+  const [jobs, setJobs] = useState<any[]>([]);
+
+  // Initial load
+  useEffect(() => {
+    setJobs(getJobs());
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mock_jobs_custom') {
+        setJobs(getJobs());
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('create') === 'true' || params.get('createFromStaffing') === 'true') {
+      if (params.get('createFromStaffing') === 'true') {
+        const title = params.get('title') || '';
+        const dept = params.get('department') || '';
+        const campus = params.get('campus') || '';
+
+        setNewJob(prev => ({
+          ...prev,
+          title,
+          department: dept,
+          location: campus === 'Villamor' ? 'NAAP - Villamor Campus' :
+            campus === 'BAB' ? 'NAAP - Basa Air Base Campus' :
+              campus === 'FAB' ? 'NAAP - Fernando Air Base Campus' :
+                campus === 'MBEAB' ? 'NAAP - Basa-Palmayo Extension Campus' : prev.location
+        }));
+      }
+      setIsCreating(true);
+      // Clean up URL without reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+  const [newJob, setNewJob] = useState({
+    title: '',
+    department: '',
+    employmentType: 'Full-time',
+    location: 'NAAP - Villamor Campus',
+    description: '',
+    requirements: [] as string[],
+    responsibilities: '',
+    deadline: '',
+    uploads: {
+      license: null as File | null,
+      certificates: null as File | null,
+      prc: null as File | null,
+      coe: null as File | null,
+    }
+  });
+
+  const handleLogout = () => {
+    router.post('/logout');
+  };
+
+  const handleCreateJob = () => {
+    // Basic Validation
+    if (!newJob.title || !newJob.department || !newJob.description) {
+      toast.error("Please fill in all required fields (Title, Department, Description).");
+      return;
+    }
+
+    if (editingId) {
+      // Update Existing Job
+      setJobs(jobs.map(j => j.id === editingId ? {
+        ...j,
+        title: newJob.title,
+        department: newJob.department,
+        employmentType: newJob.employmentType,
+        location: newJob.location,
+        description: newJob.description,
+        responsibilities: typeof newJob.responsibilities === 'string' ? newJob.responsibilities.split('\n').filter(r => r.trim()) : newJob.responsibilities,
+        requirements: newJob.requirements,
+        deadline: newJob.deadline,
+      } : j));
+      toast.success("Job updated successfully!");
+    } else {
+      // Create New Job
+      const job = {
+        id: String(Date.now()), // More robust ID generation
+        title: newJob.title,
+        department: newJob.department,
+        employmentType: newJob.employmentType,
+        location: newJob.location,
+        description: newJob.description,
+        responsibilities: typeof newJob.responsibilities === 'string' ? newJob.responsibilities.split('\n').filter(r => r.trim()) : newJob.responsibilities,
+        requirements: newJob.requirements,
+        salary: 'Not Disclosed',
+        postedDate: new Date().toISOString().split('T')[0],
+        deadline: newJob.deadline,
+        applicantCount: 0,
+        status: 'Open'
+      };
+
+      const localJobs = JSON.parse(localStorage.getItem('mock_jobs_custom') || '[]');
+      const updatedLocalJobs = [...localJobs, job];
+      localStorage.setItem('mock_jobs_custom', JSON.stringify(updatedLocalJobs));
+
+      setJobs(getJobs());
+      toast.success("Job posted successfully!");
+    }
+
+    setIsCreating(false);
+    resetForm();
+  };
+
+  const handleEdit = (job: any) => {
+    setNewJob({
+      title: job.title,
+      department: job.department,
+      employmentType: job.employmentType,
+      location: job.location,
+      description: job.description,
+      // @ts-ignore
+      requirements: job.requirements,
+      // @ts-ignore
+      responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : job.responsibilities,
+      deadline: job.deadline,
+      uploads: {
+        license: null,
+        certificates: null,
+        prc: null,
+        coe: null,
+      }
+    });
+    setEditingId(job.id);
+    setIsCreating(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to archive this job posting?")) {
+      const localJobs = JSON.parse(localStorage.getItem('mock_jobs_custom') || '[]');
+      const updatedLocalJobs = localJobs.filter((j: any) => j.id !== id);
+      localStorage.setItem('mock_jobs_custom', JSON.stringify(updatedLocalJobs));
+
+      setJobs(getJobs());
+      toast.success("Job archived successfully.");
+    }
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setNewJob({
+      title: '',
+      department: '',
+      employmentType: 'Full-time',
+      location: 'NAAP - Villamor Campus',
+      description: '',
+      requirements: [],
+      responsibilities: '',
+      deadline: '',
+      uploads: {
+        license: null,
+        certificates: null,
+        prc: null,
+        coe: null,
+      }
+    });
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof typeof newJob.uploads) => {
+    const file = e.target.files ? e.target.files[0] : null;
+    setNewJob({ ...newJob, uploads: { ...newJob.uploads, [field]: file } });
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <nav className="bg-[#193153] text-white shadow-lg sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <Shield className="h-6 w-6" />
+              <span className="font-bold text-lg">NAAP HR Admin</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/admin/dashboard">
+                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                  Dashboard
+                </Button>
+              </Link>
+              <Link href="/admin/applicants">
+                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                  Applicants
+                </Button>
+              </Link>
+              <Link href="/admin/staffing">
+                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                  Staffing
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                className="text-white hover:bg-red-500/20 hover:text-red-300"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="container mx-auto px-4 py-8 flex-1">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Management</h1>
+            <p className="text-gray-600">Create, edit, and manage job postings</p>
+          </div>
+          <Dialog open={isCreating} onOpenChange={setIsCreating}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Job
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Edit Job Posting" : "Create New Job Posting"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title">Job Title *</Label>
+                    <Input
+                      id="title"
+                      value={newJob.title}
+                      onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
+                      placeholder="e.g., Flight Instructor"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="department">Department *</Label>
+                    <Input
+                      id="department"
+                      value={newJob.department}
+                      onChange={(e) => setNewJob({ ...newJob, department: e.target.value })}
+                      placeholder="e.g., Flight Training"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="employmentType">Employment Type</Label>
+                    <Select value={newJob.employmentType} onValueChange={(value) => setNewJob({ ...newJob, employmentType: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Full-time">Full-time</SelectItem>
+                        <SelectItem value="Part-time">Part-time</SelectItem>
+                        <SelectItem value="Contract">Contract</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="location">Location</Label>
+                    <Select value={newJob.location} onValueChange={(value) => setNewJob({ ...newJob, location: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Campus" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NAAP - Villamor Campus">NAAP - Villamor Campus</SelectItem>
+                        <SelectItem value="NAAP - Basa Air Base Campus">NAAP - Basa Air Base Campus</SelectItem>
+                        <SelectItem value="NAAP - Basa-Palmayo Extension Campus">NAAP - Basa-Palmayo Extension Campus</SelectItem>
+                        <SelectItem value="NAAP - Fernando Air Base Campus">NAAP - Fernando Air Base Campus</SelectItem>
+                        <SelectItem value="NAAP - Mactan Campus">NAAP - Mactan Campus</SelectItem>
+                        <SelectItem value="NAAP - Mactan-Medellin Extension Campus">NAAP - Mactan-Medellin Extension Campus</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Job Description *</Label>
+                  <Textarea
+                    id="description"
+                    rows={4}
+                    value={newJob.description}
+                    onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
+                    placeholder="Describe the position..."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="requirements">Requirements (one per line)</Label>
+                  <Textarea
+                    id="requirements"
+                    rows={6}
+                    value={newJob.requirements.join('\n')}
+                    onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value.split('\n').filter(r => r.trim()) })}
+                    placeholder="List any other requirements..."
+                  />
+                </div>
+
+                {/* Upload Boxes */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <Label htmlFor="license">Upload License</Label>
+                    <Input
+                      type="file"
+                      id="license"
+                      onChange={(e) => handleFileChange(e, 'license')}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="certificates">Upload Certificates</Label>
+                    <Input
+                      type="file"
+                      id="certificates"
+                      onChange={(e) => handleFileChange(e, 'certificates')}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="prc">Upload PRC License</Label>
+                    <Input
+                      type="file"
+                      id="prc"
+                      onChange={(e) => handleFileChange(e, 'prc')}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="coe">Upload COE</Label>
+                    <Input
+                      type="file"
+                      id="coe"
+                      onChange={(e) => handleFileChange(e, 'coe')}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="responsibilities">Responsibilities (one per line) *</Label>
+                  <Textarea
+                    id="responsibilities"
+                    rows={6}
+                    value={newJob.responsibilities}
+                    onChange={(e) => setNewJob({ ...newJob, responsibilities: e.target.value })}
+                    placeholder="Conduct training sessions&#10;Assess performance&#10;etc..."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="deadline">Application Deadline *</Label>
+                  <Input
+                    id="deadline"
+                    type="date"
+                    value={newJob.deadline}
+                    onChange={(e) => setNewJob({ ...newJob, deadline: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleCreateJob}
+                    disabled={!newJob.title || !newJob.department || !newJob.description}
+                  >
+                    {editingId ? "Update Job Posting" : "Create Job Posting"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setIsCreating(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 mb-1">Total Jobs</p>
+                  <p className="text-3xl font-bold text-blue-600">{jobs.length}</p>
+                </div>
+                <Briefcase className="h-8 w-8 text-blue-100" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 mb-1">Open Positions</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {jobs.filter(j => j.status === 'Open').length}
+                  </p>
+                </div>
+                <Users className="h-8 w-8 text-green-100" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 mb-1">Total Applicants</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {jobs.reduce((sum, job) => sum + job.applicantCount, 0)}
+                  </p>
+                </div>
+                <Users className="h-8 w-8 text-purple-100" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Jobs Table */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Applicants</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Posted</TableHead>
+                    <TableHead>Deadline</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {jobs.map((job) => (
+                    <TableRow key={job.id}>
+                      <TableCell className="font-medium">{job.title}</TableCell>
+                      <TableCell>{job.department}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{job.employmentType}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 mr-1 text-gray-400" />
+                          {job.applicantCount}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`
+                          ${job.status === 'Open' ? 'bg-green-100 text-green-800' : ''}
+                          ${job.status === 'Closed' ? 'bg-red-100 text-red-800' : ''}
+                        `}>
+                          {job.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(job.postedDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(job.deadline).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Link href={`/jobs/${job.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(job)}>
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(job.id)}>
+                            <Archive className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-[#193153] text-white py-6 border-t border-white/10 mt-auto">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <img
+                src="/images/PhilSCA_Logo.png"
+                alt="NAAP Logo"
+                className="h-10 w-auto object-contain bg-white/10 rounded-full p-1"
+              />
+              <div>
+                <span className="font-bold text-lg tracking-tight block">NAAP Careers</span>
+                <span className="text-xs text-blue-200">National Aviation Academy of the Philippines</span>
+              </div>
+            </div>
+
+            <div className="text-center md:text-right">
+              <p className="text-xs text-blue-200 mb-1">Shaping the skies, one professional at a time.</p>
+              <p className="text-xs text-gray-400">© 2026 NAAP. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
