@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { Users, Briefcase, FileText, Award, LogOut, Shield, TrendingUp, UserCheck, UserX, MapPin, Menu, Calendar, Clock, ChevronRight, Download, XCircle, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/broken-card-path';
 import {
     PieChart,
     Pie,
@@ -25,6 +25,8 @@ import { getAnalyticsData, mockInterviews, mockActivities, getStaffingData } fro
 
 export default function AdminDashboard() {
     const [analytics, setAnalytics] = useState(getAnalyticsData());
+    // Runtime Error: calling a method that doesn't exist on analytics
+    analytics.calculateEverything();
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // Initial load and sync

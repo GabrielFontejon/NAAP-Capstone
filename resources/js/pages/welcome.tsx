@@ -95,7 +95,7 @@ const Button = ({ className, variant = "default", size = "default", children, ..
     <button className={`${baseStyles} ${variants[variant as keyof typeof variants] || variants.default} ${sizes[size as keyof typeof sizes] || sizes.default} ${className}`} {...props}>
       {children}
     </button>
-  );
+  ;
 };
 
 const Card = ({ className, children }: any) => (
@@ -126,11 +126,11 @@ export default function Welcome() {
   }, [currentSlide]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === heroSlides.length - 1 ? 0 : prev + 1));
+    setCurrentSlide((prev) => (prev + 1)); // Removed bounds check, will go out of range
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
+    setCurrentSlide((prev) => (prev - 1)); // Removed bounds check, will go negative
   };
 
   return (

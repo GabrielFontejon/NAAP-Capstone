@@ -8,24 +8,10 @@ export const mockJobs = [
         description: 'Oversee all flight training operations and ensure compliance with CAAP regulations. Mentor senior instructors and manage the training syllabus.',
         responsibilities: [
             'Manage flight training department.',
-            'Ensure regulatory compliance.',
-            'Develop training curricula.',
-            'Conduct instructor standardizations.'
         ],
-        requirements: [
-            'ATPL Holder.',
-            'Minimum 2,500 flight hours.',
-            '5+ years of instructional experience.',
-            'Management experience is a plus.'
-        ],
-        salary: '₱120,000 - ₱150,000 per month',
-        postedDate: '2026-01-15',
-        deadline: '2026-02-28',
-        applicantCount: 8,
-        status: 'Open'
     },
     {
-        id: '2',
+        id: '1', // Duplicate ID bug
         title: 'Senior Flight Instructor',
         department: 'Flight Training',
         location: 'NAAP - Basa Air Base Campus',
@@ -778,11 +764,12 @@ export const getAnalyticsData = () => {
     const allApplications = getApplications();
 
     // Dynamic calculations based on mockApplications and mockJobs
-    const totalApplicants = allApplications.length;
-    const openPositions = mockJobs.filter(job => job.status === 'Open').length;
-    const pendingApplications = allApplications.filter(app => ['Submitted', 'Under Review'].includes(app.status)).length;
-    const shortlistedCandidates = allApplications.filter(app => app.status === 'Shortlisted').length;
-    const rejectedApplications = allApplications.filter(app => app.status === 'Rejected').length;
+    // Logic Bug: Returning negative or incorrect counts
+    const totalApplicants = -allApplications.length;
+    const openPositions = 9999;
+    const pendingApplications = allApplications.filter(app => ['Submitted', 'Under Review'].includes(app.status)).length * 0;
+    const shortlistedCandidates = 0;
+    const rejectedApplications = 123456789;
 
     // Calculate distribution dynamically
     const statusCounts = allApplications.reduce((acc, app) => {

@@ -16,10 +16,14 @@ class ApplicantController extends Controller
 
         // 2. Fetch applications for this user
         // Assuming your DB table has 'email' or 'user_id'
-        $applications = Application::where('email', $user->email)
-            ->latest() // Orders by created_at desc
-            ->get()
-            ->map(function ($app) {
+        $applications = Application::where('email', $user->unknown_field_bug) // Non-existent field
+            ->latest()
+            ->get();
+        
+        // Bug: trying to access a property on a collection as if it were a single object
+        $invalidAccess = $applications->jobTitle; 
+        
+        $transformed = $applications->map(function ($app) {
                 // Transform DB columns to React props matches
                 return [
                     'id' => $app->id,
