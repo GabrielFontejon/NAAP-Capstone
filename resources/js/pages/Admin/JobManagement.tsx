@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockJobs, getJobs } from '@/data/mockData';
+import { mockJobs, getJobs, SALARY_GRADE_MAP } from '@/data/mockData';
 
-export default function JobManagement() {
+export default function JobManagement({ auth }: { auth: any }) {
+  const admin = auth?.user || { name: 'Admin' };
   const [jobs, setJobs] = useState<any[]>([]);
 
   // Initial load
@@ -63,6 +64,7 @@ export default function JobManagement() {
     description: '',
     requirements: [] as string[],
     responsibilities: '',
+    salaryGrade: 1,
     deadline: '',
     uploads: {
       license: null as File | null,
@@ -85,8 +87,8 @@ export default function JobManagement() {
 
     if (editingId) {
       // Update Existing Job
-      setJobs(jobs.map(j => j.id === editingId ? {
-        ...j,
+      const updatedJob = {
+        ...jobs.find(j => j.id === editingId),
         title: newJob.title,
         department: newJob.department,
         employmentType: newJob.employmentType,
@@ -94,8 +96,22 @@ export default function JobManagement() {
         description: newJob.description,
         responsibilities: typeof newJob.responsibilities === 'string' ? newJob.responsibilities.split('\n').filter(r => r.trim()) : newJob.responsibilities,
         requirements: newJob.requirements,
+        salaryGrade: newJob.salaryGrade,
         deadline: newJob.deadline,
-      } : j));
+      };
+
+      const localJobs = JSON.parse(localStorage.getItem('mock_jobs_custom') || '[]');
+      const exists = localJobs.some((j: any) => j.id === editingId);
+
+      let updatedLocalJobs;
+      if (exists) {
+        updatedLocalJobs = localJobs.map((j: any) => j.id === editingId ? updatedJob : j);
+      } else {
+        updatedLocalJobs = [...localJobs, updatedJob];
+      }
+
+      localStorage.setItem('mock_jobs_custom', JSON.stringify(updatedLocalJobs));
+      setJobs(getJobs());
       toast.success("Job updated successfully!");
     } else {
       // Create New Job
@@ -108,7 +124,7 @@ export default function JobManagement() {
         description: newJob.description,
         responsibilities: typeof newJob.responsibilities === 'string' ? newJob.responsibilities.split('\n').filter(r => r.trim()) : newJob.responsibilities,
         requirements: newJob.requirements,
-        salary: 'Not Disclosed',
+        salaryGrade: newJob.salaryGrade,
         postedDate: new Date().toISOString().split('T')[0],
         deadline: newJob.deadline,
         applicantCount: 0,
@@ -118,6 +134,18 @@ export default function JobManagement() {
       const localJobs = JSON.parse(localStorage.getItem('mock_jobs_custom') || '[]');
       const updatedLocalJobs = [...localJobs, job];
       localStorage.setItem('mock_jobs_custom', JSON.stringify(updatedLocalJobs));
+
+      // NEW: Update staffing monitoring status if created from there
+      const params = new URLSearchParams(window.location.search);
+      const sid = params.get('staffingId');
+      if (sid) {
+        const localStaffing = JSON.parse(localStorage.getItem('mock_staffing_custom') || '[]');
+        const updatedLocalStaffing = [
+          ...localStaffing.filter((s: any) => s.id !== Number(sid)),
+          { id: Number(sid), status: 'On-process' }
+        ];
+        localStorage.setItem('mock_staffing_custom', JSON.stringify(updatedLocalStaffing));
+      }
 
       setJobs(getJobs());
       toast.success("Job posted successfully!");
@@ -138,6 +166,7 @@ export default function JobManagement() {
       requirements: job.requirements,
       // @ts-ignore
       responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : job.responsibilities,
+      salaryGrade: job.salaryGrade || 1,
       deadline: job.deadline,
       uploads: {
         license: null,
@@ -152,9 +181,16 @@ export default function JobManagement() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to archive this job posting?")) {
+      // 1. Remove from custom jobs if it exists there
       const localJobs = JSON.parse(localStorage.getItem('mock_jobs_custom') || '[]');
-      const updatedLocalJobs = localJobs.filter((j: any) => j.id !== id);
-      localStorage.setItem('mock_jobs_custom', JSON.stringify(updatedLocalJobs));
+      const filteredLocalJobs = localJobs.filter((j: any) => j.id !== id);
+      localStorage.setItem('mock_jobs_custom', JSON.stringify(filteredLocalJobs));
+
+      // 2. Add to archived list to hide static mock jobs
+      const archivedIds = JSON.parse(localStorage.getItem('mock_jobs_archived') || '[]');
+      if (!archivedIds.includes(id)) {
+        localStorage.setItem('mock_jobs_archived', JSON.stringify([...archivedIds, id]));
+      }
 
       setJobs(getJobs());
       toast.success("Job archived successfully.");
@@ -171,6 +207,7 @@ export default function JobManagement() {
       description: '',
       requirements: [],
       responsibilities: '',
+      salaryGrade: 1,
       deadline: '',
       uploads: {
         license: null,
@@ -193,13 +230,25 @@ export default function JobManagement() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <Shield className="h-6 w-6" />
-              <span className="font-bold text-lg">NAAP HR Admin</span>
+              <div className="bg-white/10 p-2 rounded-full h-12 w-12 flex items-center justify-center overflow-hidden">
+                <img src="/images/logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
+              </div>
+              <div>
+                <Link href="/admin/dashboard" className="hover:text-blue-200 transition-colors">
+                  <span className="font-bold text-lg block leading-none">NAAP HR Admin</span>
+                  <span className="text-[10px] text-blue-200 uppercase tracking-widest">Portal</span>
+                </Link>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/admin/dashboard">
                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
                   Dashboard
+                </Button>
+              </Link>
+              <Link href="/admin/jobs">
+                <Button variant="ghost" className="text-[#ffdd59] bg-white/10">
+                  Jobs
                 </Button>
               </Link>
               <Link href="/admin/applicants">
@@ -212,6 +261,17 @@ export default function JobManagement() {
                   Staffing
                 </Button>
               </Link>
+
+              <div className="h-6 w-px bg-white/20 hidden md:block"></div>
+
+              {/* Admin User Info */}
+              <div className="hidden md:flex items-center gap-2 px-2 border-l border-white/10 ml-2">
+                <div className="w-8 h-8 rounded-full bg-[#ffdd59] flex items-center justify-center text-[#193153] font-bold text-xs ring-2 ring-white/10">
+                  {admin.name.charAt(0)}
+                </div>
+                <span className="text-sm font-medium text-blue-100">{admin.name}</span>
+              </div>
+
               <Button
                 variant="ghost"
                 className="text-white hover:bg-red-500/20 hover:text-red-300"
@@ -228,8 +288,8 @@ export default function JobManagement() {
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Management</h1>
-            <p className="text-gray-600">Create, edit, and manage job postings</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Listings Management</h1>
+            <p className="text-gray-600">Managing career opportunities as <span className="text-[#193153] font-bold">{admin.name}</span></p>
           </div>
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
             <DialogTrigger asChild>
@@ -266,7 +326,31 @@ export default function JobManagement() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <Label htmlFor="salaryGrade">Salary Grade *</Label>
+                    <div className="flex items-center space-x-2">
+                      <Select
+                        value={String(newJob.salaryGrade)}
+                        onValueChange={(value) => setNewJob({ ...newJob, salaryGrade: Number(value) })}
+                      >
+                        <SelectTrigger id="salaryGrade">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(SALARY_GRADE_MAP).map((grade) => (
+                            <SelectItem key={grade} value={grade}>
+                              SG {grade}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-2 rounded border border-blue-100 whitespace-nowrap">
+                        ₱{SALARY_GRADE_MAP[newJob.salaryGrade]?.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
                     <Label htmlFor="employmentType">Employment Type</Label>
+
                     <Select value={newJob.employmentType} onValueChange={(value) => setNewJob({ ...newJob, employmentType: value })}>
                       <SelectTrigger>
                         <SelectValue />
@@ -450,6 +534,8 @@ export default function JobManagement() {
                   <TableRow>
                     <TableHead>Job Title</TableHead>
                     <TableHead>Department</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Salary Grade</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Applicants</TableHead>
                     <TableHead>Status</TableHead>
@@ -463,6 +549,13 @@ export default function JobManagement() {
                     <TableRow key={job.id}>
                       <TableCell className="font-medium">{job.title}</TableCell>
                       <TableCell>{job.department}</TableCell>
+                      <TableCell className="text-gray-600">{job.location}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-700">SG {job.salaryGrade}</span>
+                          <span className="text-[10px] text-blue-600 font-medium">₱{SALARY_GRADE_MAP[job.salaryGrade]?.toLocaleString()}/mo</span>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{job.employmentType}</Badge>
                       </TableCell>

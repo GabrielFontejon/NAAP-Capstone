@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { mockJobs, getJobs } from '@/data/mockData';
+import { mockJobs, getJobs, SALARY_GRADE_MAP } from '@/data/mockData';
 
 interface JobIndexProps {
     auth: {
@@ -38,15 +38,8 @@ export default function JobListings({ auth }: JobIndexProps) {
     const departments = Array.from(new Set(jobs.map(j => j.department)));
     const employmentTypes = Array.from(new Set(jobs.map(j => j.employmentType)));
 
-    // Updated locations array
-    const locations = [
-        'NAAP - Villamor Campus',
-        'NAAP - Basa Air Base Campus',
-        'NAAP - Basa-Palmayo Extension Campus',
-        'NAAP - Fernando Air Base Campus',
-        'NAAP - Mactan Campus',
-        'NAAP - Mactan-Medellin Extension Campus'
-    ];
+    const locations = Array.from(new Set(jobs.map(j => j.location).filter(Boolean)));
+
 
     const [searchTerm, setSearchTerm] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('all');
@@ -230,6 +223,11 @@ export default function JobListings({ auth }: JobIndexProps) {
                                             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                                                 {job.employmentType}
                                             </Badge>
+                                            {job.salaryGrade && (
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                    SG {job.salaryGrade}: ₱{SALARY_GRADE_MAP[job.salaryGrade]?.toLocaleString()}
+                                                </Badge>
+                                            )}
                                         </div>
                                         <Badge variant="outline" className="ml-4">
                                             {job.applicantCount} applicants

@@ -18,9 +18,7 @@ export default function AdminLogin() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Redirect to admin dashboard
-    router.visit('/admin/dashboard');
-    console.log("Admin login submitted", data);
+    post('/login');
   };
 
   // Button Style: Dark Blue Base -> Yellow Hover with Dark Blue Text

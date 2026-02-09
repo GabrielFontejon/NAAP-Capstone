@@ -12,11 +12,16 @@ import {
     Star,
     Search,
     Bell,
-    Menu
+    Menu,
+    Plus
 } from 'lucide-react';
+import { getLandingPageContent } from '@/data/mockData';
 
 const NewsDashboard = () => {
+    const cmsContent = getLandingPageContent();
+    const cmsAchievementPosts = cmsContent.achievements.posts;
     const [lightboxOpen, setLightboxOpen] = useState(false);
+
     const [currentImage, setCurrentImage] = useState("");
 
     const openLightbox = (imgSrc: string) => {
@@ -204,7 +209,18 @@ const NewsDashboard = () => {
                                         Recognizing excellence and service through a structured and transparent awards system. Motivating our workforce to reach greater heights.
                                     </p>
                                 </div>
+
+                                {cmsAchievementPosts.map((post) => (
+                                    <div key={post.id} className="bg-white rounded-xl p-6 border-l-4 border-l-orange-500 shadow-sm col-span-1 md:col-span-2">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="text-lg font-bold text-[#193153]">{post.title}</h3>
+                                            {post.date && <span className="text-xs text-orange-600 font-bold uppercase">{post.date}</span>}
+                                        </div>
+                                        <p className="text-gray-600">{post.description}</p>
+                                    </div>
+                                ))}
                             </div>
+
 
                             {/* OFFICIAL MEMORANDUM TEXT */}
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 md:p-10 font-serif text-sm md:text-base leading-relaxed text-gray-800 shadow-inner">

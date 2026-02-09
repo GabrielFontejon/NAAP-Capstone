@@ -17,12 +17,18 @@ use App\Http\Controllers\AuthSecond\RegisterUserController;
 // Landing Page (The Welcome.tsx we created)
 Route::get('/', function () {
     if (Auth::check()) {
+        if (Auth::user()->email === 'admin@naap.edu.ph') {
+            return redirect()->route('admin.dashboard');
+        }
         return redirect()->route('dashboard');
     }
     return Inertia::render('welcome'); 
 })->name('home');
 
 Route::get('/dashboard', function () {
+    if (Auth::user()->email === 'admin@naap.edu.ph') {
+        return redirect()->route('admin.dashboard');
+    }
     return Inertia::render('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -123,6 +129,15 @@ Route::get('/admin/applicants', function () {
 Route::get('/admin/staffing', function () {
     return Inertia::render('Admin/StaffingMonitoring');
 })->name('admin.staffing');
+
+Route::get('/admin/activity-log', function () {
+    return Inertia::render('Admin/ActivityLog');
+})->name('admin.activity-log');
+
+Route::get('/admin/cms', function () {
+    return Inertia::render('Admin/CMS');
+})->name('admin.cms');
+
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // Protected admin routes can go here

@@ -12,6 +12,7 @@ import {
   ArrowRight,
   CheckCircle
 } from 'lucide-react';
+import { getLandingPageContent } from '@/data/mockData';
 
 // --- SHARED UI COMPONENTS ---
 const Button = ({ className, variant = "default", size = "default", children, ...props }: any) => {
@@ -78,7 +79,11 @@ const BENEFITS = [
 ];
 
 export default function EmployeeBenefits() {
+  const cmsContent = getLandingPageContent();
+  const additionalBenefits = cmsContent.perks.posts;
+
   return (
+
     <>
       <Head title="Employee Benefits - NAAP Careers" />
 
@@ -189,7 +194,17 @@ export default function EmployeeBenefits() {
                   <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
                 </Card>
               ))}
+              {additionalBenefits.map((item) => (
+                <Card key={item.id} className="p-8 border-t-4 border-t-emerald-500 bg-emerald-50/10">
+                  <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 mb-6 font-bold">
+                    +
+                  </div>
+                  <h3 className="font-bold text-xl text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
+                </Card>
+              ))}
             </div>
+
           </div>
         </section>
 

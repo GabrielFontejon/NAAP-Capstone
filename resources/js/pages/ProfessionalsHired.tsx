@@ -12,8 +12,10 @@ import {
     Plane,
     FileText,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Plus
 } from 'lucide-react';
+import { getLandingPageContent } from '@/data/mockData';
 
 // --- SHARED UI COMPONENTS ---
 const Button = ({ className, variant = "default", size = "default", children, ...props }: any) => {
@@ -82,7 +84,11 @@ const PRIME_PILLARS = [
 ];
 
 export default function ProfessionalsHired() {
+    const cmsContent = getLandingPageContent();
+    const cmsHiredPosts = cmsContent.hired.posts;
+
     // --- CAROUSEL LOGIC ---
+
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
@@ -301,6 +307,19 @@ export default function ProfessionalsHired() {
                                     </div>
                                 </div>
                             ))}
+                            {cmsHiredPosts.map((post) => (
+                                <div key={post.id} className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-emerald-500 border-gray-100 flex items-start gap-4 hover:bg-emerald-50/30 transition-all cursor-pointer group">
+                                    <div className="bg-emerald-50 p-3 rounded-lg text-emerald-600">
+                                        <Plus className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 group-hover:text-[#193153] transition-colors">{post.title}</h4>
+                                        <p className="text-sm text-gray-600 mt-1">{post.description}</p>
+                                        {post.date && <div className="text-xs text-blue-500 font-bold uppercase mt-2">{post.date}</div>}
+                                    </div>
+                                </div>
+                            ))}
+
                         </div>
                     </div>
                 </section>

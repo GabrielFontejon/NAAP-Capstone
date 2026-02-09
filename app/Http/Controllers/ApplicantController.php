@@ -16,12 +16,12 @@ class ApplicantController extends Controller
 
         // 2. Fetch applications for this user
         // Assuming your DB table has 'email' or 'user_id'
-        $applications = Application::where('email', $user->unknown_field_bug) // Non-existent field
+        $applications = Application::where('email', $user->email) // Fixed: using existing email field
             ->latest()
             ->get();
         
-        // Bug: trying to access a property on a collection as if it were a single object
-        $invalidAccess = $applications->jobTitle; 
+        // Bug fix: Removed invalid property access on a collection
+        // $invalidAccess = $applications->jobTitle; 
         
         $transformed = $applications->map(function ($app) {
                 // Transform DB columns to React props matches

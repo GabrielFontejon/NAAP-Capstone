@@ -12,11 +12,25 @@ import { Badge } from '@/components/ui/badge';
 import { getStaffingData } from '@/data/mockData';
 import { toast } from 'sonner';
 
-export default function StaffingMonitoring() {
-    const staffingData = getStaffingData();
+export default function StaffingMonitoring({ auth }: { auth: any }) {
+    const admin = auth?.user || { name: 'Admin' };
+    const [staffingData, setStaffingData] = useState(getStaffingData());
     const [searchTerm, setSearchTerm] = useState('');
     const [campusFilter, setCampusFilter] = useState('All');
     const [statusFilter, setStatusFilter] = useState('All');
+
+    const [campuses, setCampuses] = useState<string[]>([]);
+
+    React.useEffect(() => {
+        const handleSync = () => {
+            const data = getStaffingData();
+            setStaffingData(data);
+            setCampuses(Array.from(new Set(data.map(i => i.campus))));
+        };
+        window.addEventListener('storage', handleSync);
+        handleSync();
+        return () => window.removeEventListener('storage', handleSync);
+    }, []);
 
     const filteredData = staffingData.filter(item => {
         const matchesSearch = item.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,6 +47,7 @@ export default function StaffingMonitoring() {
         setTimeout(() => {
             router.get('/admin/jobs', {
                 createFromStaffing: 'true',
+                staffingId: item.id,
                 title: item.position,
                 department: item.office,
                 campus: item.campus
@@ -70,6 +85,12 @@ export default function StaffingMonitoring() {
                         </div>
 
                         <div className="hidden md:flex items-center space-x-4">
+                            <Link href="/admin/dashboard">
+                                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Dashboard
+                                </Button>
+                            </Link>
                             <Link href="/admin/jobs">
                                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
                                     <Briefcase className="h-4 w-4 mr-2" />
@@ -88,7 +109,17 @@ export default function StaffingMonitoring() {
                                     Staffing
                                 </Button>
                             </Link>
-                            <div className="h-6 w-px bg-white/20"></div>
+
+                            <div className="h-6 w-px bg-white/20 hidden md:block"></div>
+
+                            {/* Admin User Info */}
+                            <div className="hidden md:flex items-center gap-2 px-2 border-l border-white/10 ml-2">
+                                <div className="w-8 h-8 rounded-full bg-[#ffdd59] flex items-center justify-center text-[#193153] font-bold text-xs ring-2 ring-white/10">
+                                    {admin.name.charAt(0)}
+                                </div>
+                                <span className="text-sm font-medium text-blue-100">{admin.name}</span>
+                            </div>
+
                             <Button variant="ghost" className="text-white hover:bg-red-500/20 hover:text-red-300" onClick={handleLogout}>
                                 <LogOut className="h-4 w-4 mr-2" />
                                 Logout
@@ -189,10 +220,9 @@ export default function StaffingMonitoring() {
                                         onChange={(e) => setCampusFilter(e.target.value)}
                                     >
                                         <option value="All">All Campuses</option>
-                                        <option value="Villamor">Villamor Campus</option>
-                                        <option value="BAB">BAB Campus</option>
-                                        <option value="FAB">FAB Campus</option>
-                                        <option value="MBEAB">MBEAB Campus</option>
+                                        {campuses.map(campus => (
+                                            <option key={campus} value={campus}>{campus} Campus</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -239,8 +269,8 @@ export default function StaffingMonitoring() {
                                                 <td className="px-6 py-4">
                                                     <Badge
                                                         className={`text-[10px] ${item.status === 'Filled' ? 'bg-green-100 text-green-700 hover:bg-green-100/80' :
-                                                                item.status === 'Unfilled' ? 'bg-red-100 text-red-700 hover:bg-red-100/80' :
-                                                                    'bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80'
+                                                            item.status === 'Unfilled' ? 'bg-red-100 text-red-700 hover:bg-red-100/80' :
+                                                                'bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80'
                                                             }`}
                                                         variant="outline"
                                                     >

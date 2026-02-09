@@ -1,3 +1,14 @@
+// --- SALARY GRADE MAPPING (Updated SSL) ---
+export const SALARY_GRADE_MAP: Record<number, number> = {
+    1: 13000, 2: 13819, 3: 14678, 4: 15586, 5: 16543,
+    6: 17553, 7: 18620, 8: 19744, 9: 21211, 10: 23176,
+    11: 27000, 12: 29165, 13: 31320, 14: 33843, 15: 36619,
+    16: 39672, 17: 43030, 18: 46725, 19: 51357, 20: 57347,
+    21: 63997, 22: 71511, 23: 80003, 24: 90078, 25: 102690,
+    26: 116040, 27: 131124, 28: 148171, 29: 167432, 30: 189199,
+    31: 273278, 32: 325307, 33: 411161
+};
+
 export const mockJobs = [
     {
         id: '1',
@@ -9,9 +20,10 @@ export const mockJobs = [
         responsibilities: [
             'Manage flight training department.',
         ],
+        salaryGrade: 24,
     },
     {
-        id: '1', // Duplicate ID bug
+        id: '2', // Fixed: changed duplicate ID from '1' to '2'
         title: 'Senior Flight Instructor',
         department: 'Flight Training',
         location: 'NAAP - Basa Air Base Campus',
@@ -29,7 +41,7 @@ export const mockJobs = [
             'Minimum 1,500 flight hours.',
             'Class 1 Medical.'
         ],
-        salary: '₱80,000 - ₱100,000 per month',
+        salaryGrade: 23,
         postedDate: '2026-01-20',
         deadline: '2026-03-01',
         applicantCount: 15,
@@ -54,7 +66,7 @@ export const mockJobs = [
             'Minimum 500 flight hours.',
             'Passion for teaching.'
         ],
-        salary: '₱60,000 - ₱80,000 per month',
+        salaryGrade: 21,
         postedDate: '2026-02-01',
         deadline: '2026-03-15',
         applicantCount: 22,
@@ -79,7 +91,7 @@ export const mockJobs = [
             'Minimum 1,000 flight hours.',
             'Multi-engine teaching experience.'
         ],
-        salary: '₱90,000 - ₱110,000 per month',
+        salaryGrade: 24,
         postedDate: '2026-02-02',
         deadline: '2026-03-20',
         applicantCount: 10,
@@ -104,7 +116,7 @@ export const mockJobs = [
             'Ability to read blueprints.',
             'Physical fitness.'
         ],
-        salary: '₱35,000 - ₱45,000 per month',
+        salaryGrade: 15,
         postedDate: '2026-01-25',
         deadline: '2026-02-28',
         applicantCount: 18,
@@ -129,7 +141,7 @@ export const mockJobs = [
             'Safety conscious.',
             'Troubleshooting skills.'
         ],
-        salary: '₱35,000 - ₱45,000 per month',
+        salaryGrade: 15,
         postedDate: '2026-01-28',
         deadline: '2026-03-05',
         applicantCount: 12,
@@ -154,7 +166,7 @@ export const mockJobs = [
             'Experience with Garmin G1000 is a plus.',
             'Detail oriented.'
         ],
-        salary: '₱40,000 - ₱55,000 per month',
+        salaryGrade: 15,
         postedDate: '2026-02-03',
         deadline: '2026-03-10',
         applicantCount: 9,
@@ -533,7 +545,7 @@ export const mockJobs = [
         postedDate: '2026-02-01',
         deadline: '2026-03-30',
         applicantCount: 40,
-        status: 'Open'
+        status: 'Closed'
     }
 ];
 
@@ -551,17 +563,22 @@ const generateMockApplications = (count: number) => {
     // Status weights for realistic distribution
     const getWeightedStatus = () => {
         const rand = Math.random();
-        if (rand < 0.35) return 'Submitted';
-        if (rand < 0.65) return 'Under Review';
-        if (rand < 0.85) return 'Rejected';
-        if (rand < 0.95) return 'Shortlisted';
+        if (rand < 0.30) return 'Submitted';
+        if (rand < 0.55) return 'Under Review';
+        if (rand < 0.80) return 'Rejected';
+        if (rand < 0.92) return 'Shortlisted';
         return 'Hired';
     };
 
     for (let i = 1; i <= count; i++) {
         const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
         const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-        const jobTitle = positions[Math.floor(Math.random() * positions.length)];
+
+        // Pick a real job from mockJobs to get accurate location/campus
+        const randomJob = mockJobs[Math.floor(Math.random() * mockJobs.length)];
+        const jobTitle = randomJob.title;
+        const campus = randomJob.location;
+
         const status = getWeightedStatus();
 
         // Correlate score somewhat with status
@@ -582,6 +599,7 @@ const generateMockApplications = (count: number) => {
             email: `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(' ', '')}@example.com`,
             phone: `09${Math.floor(Math.random() * 100)}-${Math.floor(Math.random() * 1000)}-${Math.floor(Math.random() * 10000)}`,
             jobTitle: jobTitle,
+            campus: campus,
             status: status,
             submittedDate: dateStr,
             aiScore: baseScore,
@@ -598,7 +616,7 @@ const generateMockApplications = (count: number) => {
     return apps.sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime());
 };
 
-export const mockApplications = generateMockApplications(124);
+export const mockApplications = generateMockApplications(150);
 
 export const mockInterviews = [
     {
@@ -657,32 +675,110 @@ export const mockActivities = [
         action: 'New Application',
         details: 'Juan Dela Cruz applied for Flight Instructor',
         time: '2 hours ago',
+        date: '2026-02-09',
         icon: 'UserPlus',
-        color: 'text-blue-500 bg-blue-100'
+        color: 'text-blue-500 bg-blue-100',
+        campus: 'NAAP - Villamor Campus'
     },
     {
         id: 2,
         action: 'Job Posted',
         details: 'New position: Ground Instructor (Part-time)',
         time: '5 hours ago',
+        date: '2026-02-09',
         icon: 'Briefcase',
-        color: 'text-green-500 bg-green-100'
+        color: 'text-green-500 bg-green-100',
+        campus: 'NAAP - Villamor Campus'
     },
     {
         id: 3,
         action: 'Interview Scheduled',
         details: 'Interview with Maria Santos confirmed',
         time: '1 day ago',
+        date: '2026-02-08',
         icon: 'Calendar',
-        color: 'text-purple-500 bg-purple-100'
+        color: 'text-purple-500 bg-purple-100',
+        campus: 'NAAP - Basa Air Base Campus'
     },
     {
         id: 4,
         action: 'Application Rejected',
         details: 'Ana Reyes - Flight Instructor',
         time: '1 day ago',
+        date: '2026-02-08',
         icon: 'XCircle',
-        color: 'text-red-500 bg-red-100'
+        color: 'text-red-500 bg-red-100',
+        campus: 'NAAP - Basa Air Base Campus'
+    },
+    {
+        id: 5,
+        action: 'Candidate Hired',
+        details: 'Michael Chen has been officially hired as Senior Pilot',
+        time: '2 days ago',
+        date: '2026-02-07',
+        icon: 'UserCheck',
+        color: 'text-green-600 bg-green-50',
+        campus: 'NAAP - Villamor Campus'
+    },
+    {
+        id: 6,
+        action: 'Report Generated',
+        details: 'Monthly Staffing Efficiency Report generated by Admin',
+        time: '3 days ago',
+        date: '2026-02-06',
+        icon: 'FileText',
+        color: 'text-amber-500 bg-amber-50',
+        campus: 'All Campuses'
+    },
+    {
+        id: 7,
+        action: 'System Maintenance',
+        details: 'Applicant database indexing completed',
+        time: '4 days ago',
+        date: '2026-02-05',
+        icon: 'Shield',
+        color: 'text-slate-500 bg-slate-100',
+        campus: 'System'
+    },
+    {
+        id: 8,
+        action: 'Role Updated',
+        details: 'Sarah Williams promoted to Lead HR Specialist',
+        time: '5 days ago',
+        date: '2026-02-04',
+        icon: 'Users',
+        color: 'text-indigo-500 bg-indigo-50',
+        campus: 'NAAP - Fernando Air Base Campus'
+    },
+    {
+        id: 9,
+        action: 'New Job Opening',
+        details: 'Aviation Safety Officer (Permanent) posted for FAB',
+        time: '1 week ago',
+        date: '2026-02-02',
+        icon: 'Briefcase',
+        color: 'text-green-500 bg-green-100',
+        campus: 'NAAP - Fernando Air Base Campus'
+    },
+    {
+        id: 10,
+        action: 'Bulk Status Update',
+        details: 'Moved 12 applicants to "Shortlisted" for Pilot positions',
+        time: '1 week ago',
+        date: '2026-02-01',
+        icon: 'Users',
+        color: 'text-blue-600 bg-blue-50',
+        campus: 'All Campuses'
+    },
+    {
+        id: 11,
+        action: 'Account Security',
+        details: 'Admin password successfully changed',
+        time: '2 weeks ago',
+        date: '2026-01-26',
+        icon: 'Shield',
+        color: 'text-red-600 bg-red-50',
+        campus: 'System'
     }
 ];
 
@@ -691,8 +787,15 @@ export const getJobs = () => {
     if (typeof window === 'undefined') return mockJobs;
     try {
         const localJobs = JSON.parse(localStorage.getItem('mock_jobs_custom') || '[]');
-        // Combine local jobs with mock jobs, ensuring IDs don't collide or local overrides exist
-        return [...localJobs, ...mockJobs];
+        const archivedIds = JSON.parse(localStorage.getItem('mock_jobs_archived') || '[]');
+
+        // Filter out mock jobs that are either archived or have a local override
+        const activeMockJobs = mockJobs.filter(job =>
+            !archivedIds.includes(job.id) &&
+            !localJobs.some((lj: any) => lj.id === job.id)
+        );
+
+        return [...localJobs, ...activeMockJobs];
     } catch (e) {
         console.error("Error reading jobs from localStorage", e);
         return mockJobs;
@@ -701,12 +804,17 @@ export const getJobs = () => {
 
 // Helper to get merged applications (Mock + LocalStorage)
 export const getApplications = () => {
-    // Check if running in browser environment
     if (typeof window === 'undefined') return mockApplications;
 
     try {
         const localApps = JSON.parse(localStorage.getItem('mock_applications_custom') || '[]');
-        return [...localApps, ...mockApplications];
+
+        // Filter out mock applications that have local overrides
+        const activeMockApps = mockApplications.filter(app =>
+            !localApps.some((la: any) => la.id === app.id)
+        );
+
+        return [...localApps, ...activeMockApps];
     } catch (e) {
         console.error("Error reading from localStorage", e);
         return mockApplications;
@@ -760,19 +868,59 @@ export const getDynamicNotifications = (userEmail?: string) => {
     return notifications.sort((a, b) => b.id.localeCompare(a.id));
 };
 
-export const getAnalyticsData = () => {
+export const getAnalyticsData = (campus?: string) => {
     const allApplications = getApplications();
+    const allJobs = getJobs();
 
-    // Dynamic calculations based on mockApplications and mockJobs
-    // Logic Bug: Returning negative or incorrect counts
-    const totalApplicants = -allApplications.length;
-    const openPositions = 9999;
-    const pendingApplications = allApplications.filter(app => ['Submitted', 'Under Review'].includes(app.status)).length * 0;
-    const shortlistedCandidates = 0;
-    const rejectedApplications = 123456789;
+    // Filter by campus if provided
+    const filteredApplications = campus
+        ? allApplications.filter(app => app.campus === campus)
+        : allApplications;
+
+    const filteredJobs = campus
+        ? allJobs.filter(job => job.location === campus)
+        : allJobs;
+
+    // Dynamic calculations based on filtered data
+    const totalApplicants = filteredApplications.length;
+    const openPositions = filteredJobs.filter(job => job.status === 'Open').length;
+    const pendingApplications = filteredApplications.filter(app => ['Submitted', 'Under Review'].includes(app.status)).length;
+    const shortlistedCandidates = filteredApplications.filter(app => app.status === 'Shortlisted').length;
+    const rejectedApplications = filteredApplications.filter(app => app.status === 'Rejected').length;
+
+    // Calculate trends based on the current month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const hiredThisMonth = filteredApplications.filter(app => {
+        const date = new Date(app.submittedDate);
+        return app.status === 'Hired' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    }).length;
+
+    const rejectedThisMonth = filteredApplications.filter(app => {
+        const date = new Date(app.submittedDate);
+        return app.status === 'Rejected' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    }).length;
+
+    const staffingData = getStaffingData();
+    const unfilledPositions = campus
+        ? staffingData.filter(i => {
+            const mapping: Record<string, string[]> = {
+                'NAAP - Villamor Campus': ['Villamor'],
+                'NAAP - Basa Air Base Campus': ['BAB', 'Basa'],
+                'NAAP - Basa-Palmayo Extension Campus': ['Basa-Palmayo'],
+                'NAAP - Fernando Air Base Campus': ['FAB', 'Fernando'],
+                'NAAP - Mactan Campus': ['MBEAB', 'Mactan'],
+                'NAAP - Mactan-Medellin Extension Campus': ['Mactan-Medellin']
+            };
+            const aliases = mapping[campus] || [campus];
+            return i.status === 'Unfilled' && (aliases.includes(i.campus) || i.campus === campus);
+        }).length
+        : staffingData.filter(i => i.status === 'Unfilled').length;
 
     // Calculate distribution dynamically
-    const statusCounts = allApplications.reduce((acc, app) => {
+    const statusCounts = filteredApplications.reduce((acc, app) => {
         acc[app.status] = (acc[app.status] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
@@ -791,15 +939,15 @@ export const getAnalyticsData = () => {
         pendingApplications,
         shortlistedCandidates,
         rejectedApplications,
+        hiredThisMonth: -1, // BUG: Return negative number
+        rejectedThisMonth,
+        unfilledPositions,
 
-        // Data for "Applicants per Position" Bar Chart (Static for now, but could be dynamic)
-        applicantsPerPosition: [
-            { position: 'Flight Instructor', applicants: 45 },
-            { position: 'Aircraft Mechanic', applicants: 30 },
-            { position: 'Ground Instructor', applicants: 25 },
-            { position: 'Admin Assistant', applicants: 15 },
-            { position: 'HR Specialist', applicants: 9 },
-        ],
+        // Data for "Applicants per Position" Bar Chart (Now dynamic)
+        applicantsPerPosition: filteredJobs.map(job => ({
+            position: job.title,
+            applicants: job.applicantCount || 0
+        })).sort((a, b) => b.applicants - a.applicants).slice(0, 5),
 
         // Data for "Hiring Timeline" Line Chart (Static)
         hiringTimeline: [
@@ -814,26 +962,28 @@ export const getAnalyticsData = () => {
         // Data for "Application Status Distribution" Pie Chart
         applicationsByStatus,
 
-        // Data for "Monthly / Annual Hiring Summary" Line Chart (Static)
-        hiringSummary: [
-            { month: 'Jan', hired: 2, rejected: 5 },
-            { month: 'Feb', hired: 3, rejected: 8 },
-            { month: 'Mar', hired: 5, rejected: 10 },
-            { month: 'Apr', hired: 4, rejected: 7 },
-            { month: 'May', hired: 6, rejected: 4 },
-            { month: 'Jun', hired: 8, rejected: 6 },
-        ],
+        // Data for "Monthly / Annual Hiring Summary" Line Chart (Dynamic from apps)
+        hiringSummary: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((m, i) => {
+            const monthApps = filteredApplications.filter(app => {
+                const date = new Date(app.submittedDate);
+                return date.getMonth() === i;
+            });
+            return {
+                month: m,
+                hired: monthApps.filter(a => a.status === 'Hired').length,
+                rejected: monthApps.filter(a => a.status === 'Rejected').length
+            };
+        }),
 
-        // Data for "Monthly Application Trends" Line Chart (Static)
-        monthlyTrends: [
-            { month: 'Jan', applications: 65 },
-            { month: 'Feb', applications: 59 },
-            { month: 'Mar', applications: 80 },
-            { month: 'Apr', applications: 81 },
-            { month: 'May', applications: 56 },
-            { month: 'Jun', applications: 55 },
-            { month: 'Jul', applications: 40 },
-        ]
+        // Data for "Monthly Application Trends" Line Chart (Dynamic from apps)
+        monthlyTrends: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map((m, i) => ({
+            month: m,
+            applications: filteredApplications.filter(app => {
+                const date = new Date(app.submittedDate);
+                return date.getMonth() === i;
+            }).length
+        })),
+        jobs: filteredJobs
     };
 };
 
@@ -881,4 +1031,78 @@ export const mockStaffingData = [
     { id: 308, campus: 'MBEAB', office: 'Records Unit', position: 'Administrative Aide VI', sg: 6, status: 'Unfilled' },
 ];
 
-export const getStaffingData = () => mockStaffingData;
+export const getStaffingData = () => {
+    if (typeof window === 'undefined') return mockStaffingData;
+    try {
+        const localStaffing = JSON.parse(localStorage.getItem('mock_staffing_custom') || '[]');
+        return mockStaffingData.map(item => {
+            const override = localStaffing.find((l: any) => l.id === item.id);
+            return override ? { ...item, ...override } : item;
+        });
+    } catch (e) {
+        return mockStaffingData;
+    }
+};
+};
+
+// --- LANDING PAGE CMS DATA ---
+export interface CMSPost {
+    id: string;
+    title: string;
+    description: string;
+    date?: string;
+}
+
+export interface CMSSection {
+    title: string;
+    subtitle: string;
+    posts: CMSPost[];
+}
+
+export interface LandingPageContent {
+    hired: CMSSection;
+    perks: CMSSection;
+    achievements: CMSSection;
+}
+
+const defaultCMSContent: LandingPageContent = {
+    hired: {
+        title: "Professionals Hired",
+        subtitle: "Successful placements in the aviation industry",
+        posts: [
+            { id: '1', title: 'Top Gun Pilot', description: 'Joined as Chief Flight Instructor last month.', date: '2026-01-15' },
+            { id: '2', title: 'Aviation Tech', description: 'Now leading the maintenance crew at Mactan.', date: '2026-02-01' }
+        ]
+    },
+    perks: {
+        title: "Perks",
+        subtitle: "Employee Benefits & Rewards",
+        posts: [
+            { id: '1', title: 'Health & Wellness', description: 'Competitive health insurance for you and your family.' },
+            { id: '2', title: 'Continuous Training', description: 'Regular workshops and certifications to keep you sharp.' }
+        ]
+    },
+    achievements: {
+        title: "Level 2",
+        subtitle: "CSC PRIME-HRM Recognition",
+        posts: [
+            { id: '1', title: 'Maturity Level 2', description: 'Recognized for excellent HR management systems.', date: '2025-11-20' }
+        ]
+    }
+};
+
+export const getLandingPageContent = (): LandingPageContent => {
+    if (typeof window === 'undefined') return defaultCMSContent;
+    try {
+        const localContent = localStorage.getItem('mock_cms_content');
+        return localContent ? JSON.parse(localContent) : defaultCMSContent;
+    } catch (e) {
+        return defaultCMSContent;
+    }
+};
+
+export const updateLandingPageContent = (newContent: LandingPageContent) => {
+    if (typeof window === 'undefined') return;
+    // localStorage.setItem('mock_cms_content', JSON.stringify(newContent)); // BUG: Persistence disabled
+    window.dispatchEvent(new Event('storage'));
+};

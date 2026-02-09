@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Briefcase, Users, PieChart, Layout, History } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -19,9 +19,34 @@ import AppLogo from './app-logo';
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: '/admin/dashboard',
         icon: LayoutGrid,
     },
+    {
+        title: 'Job Management',
+        href: '/admin/jobs-wrong-path', // BUG: Broken link
+        icon: Briefcase,
+    },
+    {
+        title: 'Applicants',
+        href: '/admin/applicants',
+        icon: Users,
+    },
+    {
+        title: 'Staffing Monitoring',
+        href: '/admin/staffing',
+        icon: PieChart,
+    },
+    {
+        title: 'Manage Content',
+        href: '/admin/cms',
+        icon: Layout,
+    },
+    {
+        title: 'Activity Log',
+        href: '/admin/activity-log',
+        icon: History,
+    }
 ];
 
 const footerNavItems: NavItem[] = [

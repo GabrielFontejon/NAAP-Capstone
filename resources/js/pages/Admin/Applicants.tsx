@@ -11,10 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { mockApplications, mockInterviews, getApplications } from '@/data/mockData';
 
-export default function Applicants() {
+export default function Applicants({ auth }: { auth: any }) {
+    const admin = auth?.user || { name: 'Admin' };
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [aiMatchFilter, setAiMatchFilter] = useState('all');
+    const [campusFilter, setCampusFilter] = useState('all');
     const [sortBy, setSortBy] = useState('date');
     const [applications, setApplications] = useState(getApplications()); // Use dynamic data
 
@@ -32,6 +34,11 @@ export default function Applicants() {
         const statusParam = params.get('status');
         if (statusParam) {
             setStatusFilter(statusParam);
+        }
+
+        const campusParam = params.get('campus');
+        if (campusParam) {
+            setCampusFilter(campusParam);
         }
 
         return () => window.removeEventListener('storage', handleSync);
@@ -95,12 +102,16 @@ export default function Applicants() {
         }
     };
 
+    const statuses = ['Submitted', 'Under Review', 'Shortlisted', 'Rejected', 'Hired'];
+    const campuses = Array.from(new Set(applications.map(app => app.campus).filter(Boolean)));
+
     const filteredApplications = applications.filter(app => {
         const matchesSearch = app.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) || app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
         const matchesAiMatch = aiMatchFilter === 'all' || getAiMatch(app.aiScore) === aiMatchFilter;
+        const matchesCampus = campusFilter === 'all' || app.campus === campusFilter;
 
-        return matchesSearch && matchesStatus && matchesAiMatch;
+        return matchesSearch && matchesStatus && matchesAiMatch && matchesCampus;
     }).sort((a, b) => {
         if (sortBy === 'date') {
             return new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime();
@@ -172,11 +183,20 @@ export default function Applicants() {
 
         // Persist status change to localStorage
         const localApps = JSON.parse(localStorage.getItem('mock_applications_custom') || '[]');
-        const updatedLocalApps = localApps.map((app: any) =>
-            app.id === id ? { ...app, status: newStatus } : app
-        );
-        localStorage.setItem('mock_applications_custom', JSON.stringify(updatedLocalApps));
+        const exists = localApps.some((app: any) => app.id === id);
 
+        let updatedLocalApps;
+        if (exists) {
+            updatedLocalApps = localApps.map((app: any) =>
+                app.id === id ? { ...app, status: newStatus } : app
+            );
+        } else {
+            // Find the original app and add it to local storage with new status
+            const originalApp = applications.find(app => app.id === id);
+            updatedLocalApps = [...localApps, { ...originalApp, status: newStatus }];
+        }
+
+        localStorage.setItem('mock_applications_custom', JSON.stringify(updatedLocalApps));
         toast.success(`Applicant status updated to: ${newStatus}`);
     };
 
@@ -219,6 +239,17 @@ export default function Applicants() {
                                     Staffing
                                 </Button>
                             </Link>
+
+                            <div className="h-6 w-px bg-white/20 hidden md:block"></div>
+
+                            {/* Admin User Info */}
+                            <div className="hidden md:flex items-center gap-2 px-2 border-l border-white/10 ml-2">
+                                <div className="w-8 h-8 rounded-full bg-[#ffdd59] flex items-center justify-center text-[#193153] font-bold text-xs ring-2 ring-white/10">
+                                    {admin.name.charAt(0)}
+                                </div>
+                                <span className="text-sm font-medium text-blue-100">{admin.name}</span>
+                            </div>
+
                             <Button
                                 variant="ghost"
                                 className="text-white hover:bg-red-500/20 hover:text-red-300"
@@ -234,8 +265,8 @@ export default function Applicants() {
 
             <div className="container mx-auto px-4 py-8 flex-1">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Applicant Management</h1>
-                    <p className="text-gray-600">Review and manage job applications with AI-powered filtering</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Applicants Overview</h1>
+                    <p className="text-gray-600">Reviewing applicants as <span className="text-[#193153] font-bold">{admin.name}</span></p>
                 </div>
                 {/* Filters */}
                 <Card className="mb-6">
@@ -263,6 +294,17 @@ export default function Applicants() {
                                     <SelectItem value="Shortlisted">Shortlisted</SelectItem>
                                     <SelectItem value="Rejected">Rejected</SelectItem>
                                     <SelectItem value="Hired">Hired</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={campusFilter} onValueChange={setCampusFilter}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Campuses" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Campuses</SelectItem>
+                                    {campuses.map(campus => (
+                                        <SelectItem key={campus} value={campus}>{campus}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <Select value={aiMatchFilter} onValueChange={setAiMatchFilter}>
@@ -341,6 +383,7 @@ export default function Applicants() {
                                     <TableRow>
                                         <TableHead>Applicant</TableHead>
                                         <TableHead>Position</TableHead>
+                                        <TableHead>Campus</TableHead>
                                         <TableHead>AI Score</TableHead>
                                         <TableHead>Match</TableHead>
                                         <TableHead>Status</TableHead>
@@ -358,6 +401,11 @@ export default function Applicants() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>{app.jobTitle}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="text-[10px] font-semibold bg-gray-50 border-gray-200">
+                                                    {app.campus ? app.campus.replace('NAAP - ', '') : 'N/A'}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center">
                                                     <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
@@ -399,6 +447,12 @@ export default function Applicants() {
                                                         </DialogHeader>
                                                         <div className="space-y-4">
                                                             <div>
+                                                                <h4 className="font-semibold mb-2">Application Information</h4>
+                                                                <p><strong>Position:</strong> {app.jobTitle}</p>
+                                                                <p><strong>Campus:</strong> {app.campus}</p>
+                                                                <p><strong>Date Applied:</strong> {new Date(app.submittedDate).toLocaleDateString()}</p>
+                                                            </div>
+                                                            <div>
                                                                 <h4 className="font-semibold mb-2">Personal Information</h4>
                                                                 <p><strong>Name:</strong> {app.applicantName}</p>
                                                                 <p><strong>Email:</strong> {app.email}</p>
@@ -433,13 +487,19 @@ export default function Applicants() {
                                                             </div>
                                                             <div className="flex gap-2">
                                                                 <Button
-                                                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                                                                     onClick={() => {
                                                                         handleStatusUpdate(app.id, 'Shortlisted');
                                                                         // Optionally open interview modal here too
                                                                     }}
                                                                 >
-                                                                    Shortlist & Schedule
+                                                                    Shortlist
+                                                                </Button>
+                                                                <Button
+                                                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                                    onClick={() => handleStatusUpdate(app.id, 'Hired')}
+                                                                >
+                                                                    Hire
                                                                 </Button>
                                                                 <Button
                                                                     variant="destructive"

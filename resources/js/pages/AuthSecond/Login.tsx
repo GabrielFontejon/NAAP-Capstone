@@ -8,12 +8,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export default function ApplicantLogin() {
+export default function ApplicantLogin({ flash }: any) {
     // State for UI controls
     const [activeTab, setActiveTab] = useState('login');
     const [showLoginPassword, setShowLoginPassword] = useState(false);
     const [showRegPassword, setShowRegPassword] = useState(false);
     const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
+
+    // Effect to handle flash messages if needed
+    useEffect(() => {
+        if (flash?.message) {
+            // You could use a toast here if available
+            console.log(flash.message);
+        }
+    }, [flash]);
 
     // 1. Setup Form Handling for LOGIN
     const {
@@ -55,13 +63,6 @@ export default function ApplicantLogin() {
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Check for Admin Credentials
-        if (loginData.email === 'admin@naap.edu.ph' && loginData.password === 'password') {
-            // Manually redirect to Admin Dashboard
-            router.visit('/admin/dashboard');
-            return;
-        }
 
         postLogin('/login');
     };
@@ -138,6 +139,14 @@ export default function ApplicantLogin() {
                                     Register
                                 </TabsTrigger>
                             </TabsList>
+
+                            {/* Flash Message Alert */}
+                            {flash?.message && (
+                                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 font-semibold animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <CheckCircle className="inline-block h-4 w-4 mr-2" />
+                                    {flash.message}
+                                </div>
+                            )}
 
                             {/* --- LOGIN FORM --- */}
                             <TabsContent value="login" className="mt-0 focus-visible:outline-none">

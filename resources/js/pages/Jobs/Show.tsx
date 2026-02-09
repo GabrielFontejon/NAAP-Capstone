@@ -1,10 +1,10 @@
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, MapPin, Briefcase, Clock, Calendar, Users, CheckCircle, Upload } from 'lucide-react';
+import { ArrowLeft, MapPin, Briefcase, Clock, Calendar, Users, CheckCircle, Upload, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { mockJobs } from '@/data/mockData';
+import { mockJobs, SALARY_GRADE_MAP } from '@/data/mockData';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import {
@@ -226,8 +226,14 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                                         <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
                                             {job.employmentType}
                                         </Badge>
-                                        <p className="mt-4 text-lg font-semibold text-gray-800">
-                                            Salary Range: {job.salary || 'Not Specified'}
+                                        <p className="mt-4 text-lg font-semibold text-[#193153] flex items-center">
+                                            <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
+                                            Salary Grade {job.salaryGrade || 'N/A'}
+                                            {job.salaryGrade && SALARY_GRADE_MAP[job.salaryGrade] && (
+                                                <span className="ml-2 text-sm font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
+                                                    ₱{SALARY_GRADE_MAP[job.salaryGrade].toLocaleString()} / month
+                                                </span>
+                                            )}
                                         </p>
                                     </div>
                                 </div>
@@ -254,7 +260,7 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                                 <section>
                                     <h3 className="text-xl font-bold text-gray-900 mb-4">Requirements</h3>
                                     <ul className="space-y-2">
-                                        {job.requirements.map((req, index) => (
+                                        {job.requirements?.map((req, index) => (
                                             <li key={index} className="flex items-start">
                                                 <span className="text-blue-600 mr-2">✓</span>
                                                 <span className="text-gray-700">{req}</span>
@@ -279,11 +285,11 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                                             <span className="text-sm">Posted</span>
                                         </div>
                                         <p className="font-semibold">
-                                            {new Date(job.postedDate).toLocaleDateString('en-US', {
+                                            {job.postedDate ? new Date(job.postedDate).toLocaleDateString('en-US', {
                                                 year: 'numeric',
                                                 month: 'long',
                                                 day: 'numeric'
-                                            })}
+                                            }) : 'Recently'}
                                         </p>
                                     </div>
 
@@ -293,11 +299,11 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                                             <span className="text-sm">Deadline</span>
                                         </div>
                                         <p className="font-semibold text-red-600">
-                                            {new Date(job.deadline).toLocaleDateString('en-US', {
+                                            {job.deadline ? new Date(job.deadline).toLocaleDateString('en-US', {
                                                 year: 'numeric',
                                                 month: 'long',
                                                 day: 'numeric'
-                                            })}
+                                            }) : 'N/A'}
                                         </p>
                                     </div>
                                 </div>
