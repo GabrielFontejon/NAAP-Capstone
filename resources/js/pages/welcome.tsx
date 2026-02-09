@@ -11,27 +11,10 @@ import {
   ShieldCheck,
   Gift
 } from 'lucide-react';
-import { getJobs, getAnalyticsData, SALARY_GRADE_MAP, getLandingPageContent } from '@/data/mockData';
+import { getJobs, getAnalyticsData, SALARY_GRADE_MAP, getLandingPageContent, getAnnouncements } from '@/data/mockData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
-// --- CONFIGURATION: SLIDES (Image + Text) ---
-const heroSlides = [
-  {
-    image: '/images/Dorm1.jpg',
-    title: "Vision",
-    description: "NAAP is a leading professional aviation education institution with a balanced liberal arts and technology."
-  },
-  {
-    image: '/images/Dorm2.jpg',
-    title: "Mission",
-    description: "NAAP continuously produces industry-ready and world-class graduates through quality instruction, research, extension, resource management and linkages."
-  },
-  {
-    image: '/images/dorm3.jpg',
-    title: "Core Values",
-    description: "INTEGRITY, ACADEMIC EXCELLENCE, COMMUNITY AND INDUSTRY CENTERED HUMANE"
-  }
-];
+// --- CONFIGURATION: ANNOUNCEMENTS (Dynamic from mockData) ---
 
 // --- COMPONENTS ---
 const Button = ({ className, variant = "default", size = "default", children, ...props }: any) => {
@@ -84,13 +67,8 @@ export default function Welcome() {
   const displayHired = hiredCount;
 
   const cmsContent = getLandingPageContent();
-  const [selectedSection, setSelectedSection] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const announcements = getAnnouncements();
 
-  const openCMSModal = (key: 'hired' | 'perks' | 'achievements') => {
-    setSelectedSection(cmsContent[key]);
-    setIsModalOpen(true);
-  };
 
   // --- CAROUSEL LOGIC ---
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -103,11 +81,11 @@ export default function Welcome() {
   }, [currentSlide]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    setCurrentSlide((prev) => (prev + 1) % announcements.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+    setCurrentSlide((prev) => (prev - 1 + announcements.length) % announcements.length);
   };
 
   return (
@@ -157,14 +135,14 @@ export default function Welcome() {
         <section className="relative h-[700px] flex items-center justify-center overflow-hidden">
 
           {/* Background Images Layer */}
-          {heroSlides.map((slide, index) => (
+          {announcements.map((announcement, index) => (
             <div
-              key={index}
+              key={announcement.id}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
             >
               <img
-                src={slide.image}
-                alt={`Slide ${index + 1}`}
+                src={announcement.image}
+                alt={announcement.title}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#193153]/95 via-[#193153]/60 to-[#193153]/20" />
@@ -187,7 +165,7 @@ export default function Welcome() {
 
           {/* Dots Indicators */}
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex space-x-3 z-20">
-            {heroSlides.map((_, idx) => (
+            {announcements.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
@@ -202,10 +180,10 @@ export default function Welcome() {
 
               <div className="min-h-[240px] flex flex-col justify-center">
                 <h2 className="text-6xl md:text-7xl font-extrabold text-white mb-8 tracking-tight drop-shadow-xl transition-all duration-500">
-                  {heroSlides[currentSlide].title}
+                  {announcements[currentSlide].title}
                 </h2>
                 <p className="text-2xl text-blue-50 mb-10 leading-relaxed drop-shadow-md font-light transition-all duration-500">
-                  {heroSlides[currentSlide].description}
+                  {announcements[currentSlide].description}
                 </p>
               </div>
 
@@ -246,7 +224,8 @@ export default function Welcome() {
               </Link>
 
               {/* Card 2: CMS Managed Hired */}
-              <div onClick={() => openCMSModal('hired')} className="block h-full group cursor-pointer">
+              {/* Card 2: CMS Managed Hired */}
+              <Link href="/professionals-hired" className="block h-full group">
                 <Card className="h-full border-b-8 border-b-emerald-500 shadow-xl hover:-translate-y-2 transition-all duration-300">
                   <CardContent className="pt-10 text-center">
                     <div className="inline-flex p-4 rounded-full bg-emerald-50 mb-6 group-hover:bg-[#193153] group-hover:text-[#ffdd59] transition-colors duration-300">
@@ -256,10 +235,11 @@ export default function Welcome() {
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Professionals Hired</p>
                   </CardContent>
                 </Card>
-              </div>
+              </Link>
 
               {/* Card 3: CMS Managed Perks */}
-              <div onClick={() => openCMSModal('perks')} className="block h-full group cursor-pointer">
+              {/* Card 3: CMS Managed Perks */}
+              <Link href="/employee-benefits" className="block h-full group">
                 <Card className="h-full border-b-8 border-b-purple-500 shadow-xl hover:-translate-y-2 transition-all duration-300">
                   <CardContent className="pt-10 text-center">
                     <div className="inline-flex p-4 rounded-full bg-purple-50 mb-6 group-hover:bg-[#ffdd59] group-hover:text-[#193153] transition-colors duration-300">
@@ -269,10 +249,11 @@ export default function Welcome() {
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Employee Benefits & Rewards</p>
                   </CardContent>
                 </Card>
-              </div>
+              </Link>
 
               {/* Card 4: CMS Managed Achievements */}
-              <div onClick={() => openCMSModal('achievements')} className="block h-full group cursor-pointer">
+              {/* Card 4: CMS Managed Achievements */}
+              <Link href="/news/csc-prime-hrm-level-2" className="block h-full group">
                 <Card className="h-full border-b-8 border-b-orange-500 shadow-xl hover:-translate-y-2 transition-all duration-300">
                   <CardContent className="pt-10 text-center">
                     <div className="inline-flex p-4 rounded-full bg-orange-50 mb-6 group-hover:bg-[#193153] group-hover:text-[#ffdd59] transition-colors duration-300">
@@ -282,7 +263,7 @@ export default function Welcome() {
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">CSC PRIME-HRM Recognition</p>
                   </CardContent>
                 </Card>
-              </div>
+              </Link>
             </div>
           </div>
         </section>
@@ -339,30 +320,7 @@ export default function Welcome() {
         </section>
 
         {/* CMS Detail Modal */}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#193153]">{selectedSection?.title}</DialogTitle>
-              <DialogDescription className="text-lg text-gray-500">{selectedSection?.subtitle}</DialogDescription>
-            </DialogHeader>
-            <div className="mt-6 space-y-6">
-              {selectedSection?.posts.map((post: any) => (
-                <div key={post.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-md transition-all group">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-lg font-bold text-gray-900 group-hover:text-[#193153] transition-colors">{post.title}</h4>
-                    {post.date && <span className="text-xs text-blue-500 font-bold uppercase">{post.date}</span>}
-                  </div>
-                  <p className="text-gray-600 leading-relaxed">{post.description}</p>
-                </div>
-              ))}
-              {selectedSection?.posts.length === 0 && (
-                <div className="text-center py-10">
-                  <p className="text-gray-500 italic">No posts found for this section yet.</p>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+
 
         {/* Footer - Dark Blue #193153 (Bottom) */}
         <footer className="bg-[#193153] text-white py-6 border-t border-white/10 mt-auto">

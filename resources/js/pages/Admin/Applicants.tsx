@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Shield, Users, LogOut, Search, Download, Star, Calendar, Eye, Edit, Trash, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, Users, LogOut, Search, Download, Star, Calendar, Eye, Edit, Trash, Plus, ChevronDown, ChevronUp, Briefcase, Layout } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -218,24 +218,32 @@ export default function Applicants({ auth }: { auth: any }) {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                            <div className="bg-white/10 p-2 rounded-full h-10 w-10 flex items-center justify-center overflow-hidden">
+                            <div className="bg-white/10 p-2 rounded-full h-12 w-12 flex items-center justify-center overflow-hidden">
                                 <img src="/images/PhilSCA_Logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
                             </div>
-                            <span className="font-bold text-lg">NAAP HR Admin</span>
+                            <div>
+                                <Link href="/admin/dashboard" className="hover:text-blue-200 transition-colors">
+                                    <span className="font-bold text-lg block leading-none">NAAP HR Admin</span>
+                                    <span className="text-[10px] text-blue-200 uppercase tracking-widest">Portal</span>
+                                </Link>
+                            </div>
                         </div>
                         <div className="flex items-center space-x-4">
                             <Link href="/admin/dashboard">
                                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                                    <Shield className="h-4 w-4 mr-2" />
                                     Dashboard
                                 </Button>
                             </Link>
                             <Link href="/admin/jobs">
                                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                                    <Briefcase className="h-4 w-4 mr-2" />
                                     Jobs
                                 </Button>
                             </Link>
                             <Link href="/admin/staffing">
                                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                                    <Users className="h-4 w-4 mr-2" />
                                     Staffing
                                 </Button>
                             </Link>

@@ -3,7 +3,7 @@ import { Link, router } from '@inertiajs/react';
 import {
     Users, Briefcase, FileText, Award, LogOut, Shield,
     Search, Filter, MapPin, Plus, ArrowRight, CheckCircle,
-    XCircle, AlertCircle, Building2
+    XCircle, AlertCircle, Building2, Layout
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,7 +91,7 @@ export default function StaffingMonitoring({ auth }: { auth: any }) {
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                             <div className="bg-white/10 p-2 rounded-full h-12 w-12 flex items-center justify-center overflow-hidden">
-                                <img src="/images/logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
+                                <img src="/images/PhilSCA_Logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
                             </div>
                             <div>
                                 <Link href="/admin/dashboard" className="hover:text-blue-200 transition-colors">

@@ -138,6 +138,10 @@ Route::get('/admin/cms', function () {
     return Inertia::render('Admin/CMS');
 })->name('admin.cms');
 
+Route::get('/admin/landing-page', function () {
+    return Inertia::render('Admin/LandingPageManager');
+})->name('admin.landing-page');
+
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // Protected admin routes can go here

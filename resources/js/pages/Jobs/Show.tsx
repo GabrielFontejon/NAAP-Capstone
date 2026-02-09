@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { mockJobs, SALARY_GRADE_MAP } from '@/data/mockData';
+import { mockJobs, SALARY_GRADE_MAP, getJobs } from '@/data/mockData';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import {
@@ -55,7 +55,12 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
         contactNumber: '',
         alternateContact: '',
         address: '',
-        openToOthers: 'yes'
+        openToOthers: 'yes',
+        // AI Scoring fields
+        educationLevel: 'bachelor' as 'bachelor' | 'masters' | 'doctoral_graduate' | 'doctoral_27+' | 'doctoral_18-24' | 'doctoral_15-18' | 'doctoral_9-15',
+        yearsOfExperience: '0',
+        awards: [] as ('national' | 'csc' | 'president' | 'ngo')[],
+        trainingHours: '0'
     });
 
     const [attachedDocs, setAttachedDocs] = useState<Record<string, boolean>>({});
@@ -157,8 +162,9 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
         }, 2000);
     };
 
-    // Find the job by ID from mockJobs
-    const job = mockJobs.find(j => j.id === id) || mockJobs.find(j => j.id === String(id));
+    // Find the job by ID from all jobs (mockJobs + localStorage)
+    const allJobs = getJobs();
+    const job = allJobs.find(j => j.id === id) || allJobs.find(j => j.id === String(id));
 
     if (!job) {
         return (
@@ -248,7 +254,7 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                                 <section className="mb-8">
                                     <h3 className="text-xl font-bold text-gray-900 mb-4">Key Responsibilities</h3>
                                     <ul className="space-y-2">
-                                        {job.responsibilities.map((resp, index) => (
+                                        {job.responsibilities.map((resp: string, index: number) => (
                                             <li key={index} className="flex items-start">
                                                 <span className="text-blue-600 mr-2">•</span>
                                                 <span className="text-gray-700">{resp}</span>
@@ -260,7 +266,7 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                                 <section>
                                     <h3 className="text-xl font-bold text-gray-900 mb-4">Requirements</h3>
                                     <ul className="space-y-2">
-                                        {job.requirements?.map((req, index) => (
+                                        {job.requirements?.map((req: string, index: number) => (
                                             <li key={index} className="flex items-start">
                                                 <span className="text-blue-600 mr-2">✓</span>
                                                 <span className="text-gray-700">{req}</span>

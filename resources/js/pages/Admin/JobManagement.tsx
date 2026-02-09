@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Shield, LogOut, Plus, Edit, Archive, Eye, Users, Briefcase } from 'lucide-react';
+import { Shield, LogOut, Plus, Edit, Archive, Eye, Users, Briefcase, Layout } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -231,7 +231,7 @@ export default function JobManagement({ auth }: { auth: any }) {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <div className="bg-white/10 p-2 rounded-full h-12 w-12 flex items-center justify-center overflow-hidden">
-                <img src="/images/logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
+                <img src="/images/PhilSCA_Logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
               </div>
               <div>
                 <Link href="/admin/dashboard" className="hover:text-blue-200 transition-colors">
@@ -243,21 +243,25 @@ export default function JobManagement({ auth }: { auth: any }) {
             <div className="flex items-center space-x-4">
               <Link href="/admin/dashboard">
                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                  <Shield className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               </Link>
               <Link href="/admin/jobs">
                 <Button variant="ghost" className="text-[#ffdd59] bg-white/10">
+                  <Briefcase className="h-4 w-4 mr-2" />
                   Jobs
                 </Button>
               </Link>
               <Link href="/admin/applicants">
                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                  <Users className="h-4 w-4 mr-2" />
                   Applicants
                 </Button>
               </Link>
               <Link href="/admin/staffing">
                 <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
+                  <Users className="h-4 w-4 mr-2" />
                   Staffing
                 </Button>
               </Link>

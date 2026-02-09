@@ -95,7 +95,7 @@ export default function AdminDashboard({ auth }: { auth: any }) {
                                 onClick={handleBackToGlobal}
                                 style={{ cursor: 'pointer' }}
                             >
-                                <img src="/images/logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
+                                <img src="/images/PhilSCA_Logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
                             </div>
                             <div>
                                 <span className="font-bold text-lg block leading-none">NAAP HR Admin</span>
@@ -578,73 +578,18 @@ export default function AdminDashboard({ auth }: { auth: any }) {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <Link href="/admin/jobs?create=true" className="block">
-                                <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
+                                <Button variant="outline" className="w-full justify-start border-[#193153] text-[#193153] hover:bg-[#193153] hover:text-[#ffdd59] hover:shadow-lg hover:scale-105 transition-all duration-200">
                                     <Briefcase className="w-4 h-4 mr-2" /> Post New Job
                                 </Button>
                             </Link>
                             <Link href="/admin/applicants" className="block">
-                                <Button variant="outline" className="w-full justify-start border-[#193153] text-[#193153] hover:bg-[#193153] hover:text-[#ffdd59]">
+                                <Button variant="outline" className="w-full justify-start border-[#193153] text-[#193153] hover:bg-[#193153] hover:text-[#ffdd59] hover:shadow-lg hover:scale-105 transition-all duration-200">
                                     <UserCheck className="w-4 h-4 mr-2" /> Review Applicants
                                 </Button>
                             </Link>
-
-                            <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-                                <DialogTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className="w-full justify-start text-gray-600"
-                                    >
-                                        <FileText className="w-4 h-4 mr-2" /> Generate Reports
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px]">
-                                    <DialogHeader>
-                                        <DialogTitle>Generate Analytics Report</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                        <div className="grid grid-cols-4 items-center gap-4">
-                                            <Label htmlFor="report-type" className="text-right">
-                                                Type
-                                            </Label>
-                                            <Select value={reportType} onValueChange={setReportType}>
-                                                <SelectTrigger className="col-span-3">
-                                                    <SelectValue placeholder="Select report type" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="applicants">Applicant Summary</SelectItem>
-                                                    <SelectItem value="hiring">Hiring Velocity</SelectItem>
-                                                    <SelectItem value="performance">Recruitment Performance</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="grid grid-cols-4 items-center gap-4">
-                                            <Label htmlFor="date-range" className="text-right">
-                                                Range
-                                            </Label>
-                                            <Select value={dateRange} onValueChange={setDateRange}>
-                                                <SelectTrigger className="col-span-3">
-                                                    <SelectValue placeholder="Select date range" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="week">Last 7 Days</SelectItem>
-                                                    <SelectItem value="month">Last 30 Days</SelectItem>
-                                                    <SelectItem value="quarter">Last Quarter</SelectItem>
-                                                    <SelectItem value="year">Year to Date</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button type="button" onClick={handleGenerateReport} className="bg-[#193153] text-white">
-                                            <Download className="mr-2 h-4 w-4" /> Download Report
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-
-                            <Link href="/admin/cms" className="block">
-                                <Button variant="ghost" className="w-full justify-start text-blue-600 hover:bg-blue-50">
-                                    <Layout className="w-4 h-4 mr-2" /> Manage Landing Page
+                            <Link href="/admin/landing-page" className="block">
+                                <Button variant="outline" className="w-full justify-start border-[#193153] text-[#193153] hover:bg-[#193153] hover:text-[#ffdd59] hover:shadow-lg hover:scale-105 transition-all duration-200">
+                                    <Layout className="w-4 h-4 mr-2" /> Edit Landing Page
                                 </Button>
                             </Link>
                         </CardContent>

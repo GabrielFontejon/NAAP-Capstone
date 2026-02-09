@@ -90,6 +90,18 @@ interface Application {
     phone?: string;
     education?: string;
     email: string;
+    // AI Scoring fields
+    educationLevel?: 'bachelor' | 'masters' | 'doctoral_graduate' | 'doctoral_27+' | 'doctoral_18-24' | 'doctoral_15-18' | 'doctoral_9-15';
+    yearsOfExperience?: number;
+    awards?: ('national' | 'csc' | 'president' | 'ngo')[];
+    trainingHours?: number;
+    aiScore?: number;
+    aiScoreBreakdown?: {
+        education: number;
+        experience: number;
+        accomplishments: number;
+        training: number;
+    };
 }
 
 interface UserData {

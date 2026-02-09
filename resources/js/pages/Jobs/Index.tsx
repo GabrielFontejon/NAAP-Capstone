@@ -88,7 +88,7 @@ export default function JobListings({ auth }: JobIndexProps) {
                         ) : (
                             <div className="flex gap-3">
                                 <Link href="/login">
-                                    <Button variant="ghost" className="text-white hover:text-[#ffdd59]">
+                                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
                                         Login/Register
                                     </Button>
                                 </Link>

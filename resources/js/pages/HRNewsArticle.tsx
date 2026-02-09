@@ -1,85 +1,136 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { ChevronLeft, Calendar, User, Share2, Tag, Search, Menu } from 'lucide-react';
+import { ChevronLeft, Calendar, User, Share2, Tag, Search, Menu, Facebook, Twitter, Linkedin, Link as LinkIcon, Check } from 'lucide-react';
+import { getHRNews, type HRNewsItem } from '@/data/mockData';
+import { toast } from 'sonner';
 
 interface ArticleProps {
     id: string;
 }
 
-const HRNewsArticle = ({ id }: ArticleProps) => {
-    // Mock Data for Articles
-    const articles: Record<string, any> = {
-        "1": {
-            title: "NAAP Launches New Employee Wellness Program",
-            date: "June 05, 2026",
-            category: "Employee Welfare",
-            author: "HR Department",
-            content: (
-                <>
-                    <p className="mb-6">The National Aviation Academy of the Philippines (NAAP) is proud to announce the launch of its comprehensive <strong>Employee Wellness Program</strong>, designed to prioritize the physical, mental, and emotional well-being of its workforce.</p>
-                    <p className="mb-6">Recognizing that a healthy team is a productive team, this initiative introduces a suite of benefits aimed at fostering a balanced work-life environment.</p>
+// Convert plain text to formatted HTML
+const formatTextToHTML = (text: string): string => {
+    if (!text) return '';
 
-                    <h3 className="text-xl font-bold text-[#193153] mb-4">Key Features of the Program:</h3>
-                    <ul className="list-disc pl-6 mb-6 space-y-2">
-                        <li><strong>Gym Memberships:</strong> Subsidized access to partner fitness centers.</li>
-                        <li><strong>Mental Health Support:</strong> Free access to counseling services and mental health workshops.</li>
-                        <li><strong>Flexible Work Arrangements:</strong> Options for remote work and flexible hours for eligible roles.</li>
-                        <li><strong>Annual Health Screenings:</strong> Comprehensive executive check-ups covered by the academy.</li>
-                    </ul>
+    const lines = text.split('\n');
+    let html = '';
+    let inList = false;
 
-                    <p className="mb-6">"Our employees are our greatest asset," said the HR Director. "This program is a testament to our commitment to creating a supportive and nurturing environment where everyone can thrive."</p>
-                    <p>The program takes effect immediately, and employees are encouraged to visit the HR portal for enrollment details.</p>
-                </>
-            )
-        },
-        "2": {
-            title: "Mass Recruitment for Senior Instructors Begins",
-            date: "May 22, 2026",
-            category: "Recruitment",
-            author: "Talent Acquisition",
-            content: (
-                <>
-                    <p className="mb-6">In response to the surge in student enrollment for the upcoming academic year, NAAP is kicking off a <strong>Mass Recruitment Drive</strong> for Senior Flight Instructors.</p>
-                    <p className="mb-6">We are looking for experienced aviators with a passion for teaching to help shape the next generation of world-class pilots.</p>
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
 
-                    <h3 className="text-xl font-bold text-[#193153] mb-4">Qualifications:</h3>
-                    <ul className="list-disc pl-6 mb-6 space-y-2">
-                        <li>Valid Commercial Pilot License (CPL) with Instrument Rating.</li>
-                        <li>Flight Instructor License (FI).</li>
-                        <li>Minimum of 1,500 flight hours.</li>
-                        <li>Strong communication and mentorship skills.</li>
-                    </ul>
-
-                    <p className="mb-6">Successful candidates will enjoy competitive compensation packages, opportunities for career advancement, and the chance to work with state-of-the-art flight simulation technology.</p>
-                    <p>Interested applicants may submit their CVs through the NAAP Careers Portal or visit the HR office for walk-in interviews starting June 1st.</p>
-                </>
-            )
-        },
-        "3": {
-            title: "Advanced Leadership Training for Admin Staff",
-            date: "May 10, 2026",
-            category: "Training & Dev",
-            author: "Learning & Development",
-            content: (
-                <>
-                    <p className="mb-6">NAAP invests in its future leaders with the rollout of the <strong>Advanced Leadership Training Workshop</strong> for selected administrative staff.</p>
-                    <p className="mb-6">This 3-day intensive program, held in partnership with top management consultants, aims to equip our admin team with the strategic skills needed to navigate the evolving aviation education landscape.</p>
-
-                    <h3 className="text-xl font-bold text-[#193153] mb-4">Workshop Modules:</h3>
-                    <ul className="list-disc pl-6 mb-6 space-y-2">
-                        <li>Strategic Decision Making</li>
-                        <li>Conflict Resolution and Negotiation</li>
-                        <li>Change Management</li>
-                        <li>Innovation in Educational Administration</li>
-                    </ul>
-
-                    <p>Participants will engage in case studies, role-playing simulations, and peer coaching sessions. This initiative underscores NAAP's dedication to continuous professional development and internal promotion.</p>
-                </>
-            )
+        // Skip empty lines
+        if (!line) {
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+            continue;
         }
-    };
 
-    const article = articles[id];
+        // Horizontal rule
+        if (line === '---') {
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+            html += '<hr class="my-8 border-gray-300" />';
+            continue;
+        }
+
+        // Bullet points
+        if (line.startsWith('- ')) {
+            if (!inList) {
+                html += '<ul class="list-disc pl-6 mb-6 space-y-2">';
+                inList = true;
+            }
+            html += `<li>${line.substring(2)}</li>`;
+            continue;
+        }
+
+        // Close list if we're in one and hit non-list content
+        if (inList) {
+            html += '</ul>';
+            inList = false;
+        }
+
+        // Section headers (ALL CAPS lines)
+        if (line === line.toUpperCase() && line.length > 3 && !line.includes(':')) {
+            html += `<h3 class="text-2xl font-bold text-[#193153] mb-4 mt-8">${line}</h3>`;
+            continue;
+        }
+
+        // Subsection headers (lines ending with colon or containing specific keywords)
+        if (line.includes(':') && line.split(':')[0].length < 50) {
+            const parts = line.split(':');
+            if (parts.length === 2) {
+                html += `<p class="mb-4"><strong>${parts[0]}:</strong> ${parts[1]}</p>`;
+            } else {
+                html += `<p class="font-bold text-lg text-[#193153] mb-2 mt-6">${line}</p>`;
+            }
+            continue;
+        }
+
+        // Regular paragraphs
+        html += `<p class="mb-4">${line}</p>`;
+    }
+
+    // Close any open list
+    if (inList) {
+        html += '</ul>';
+    }
+
+    return html;
+};
+
+const HRNewsArticle = ({ id }: ArticleProps) => {
+    const [article, setArticle] = useState<HRNewsItem | null>(null);
+    const [showShareMenu, setShowShareMenu] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        const articles = getHRNews();
+        const found = articles.find(a => a.id === parseInt(id));
+        setArticle(found || null);
+    }, [id]);
+
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareTitle = article?.title || '';
+
+    const handleShare = async (platform: string) => {
+        const url = encodeURIComponent(shareUrl);
+        const text = encodeURIComponent(shareTitle);
+
+        const shareUrls: Record<string, string> = {
+            facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+            twitter: `https://twitter.com/intent/tweet?url=${url}&text=${text}`,
+            linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+        };
+
+        if (platform === 'copy') {
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                setCopied(true);
+                toast.success('Link copied to clipboard!');
+                setTimeout(() => setCopied(false), 2000);
+            } catch (err) {
+                toast.error('Failed to copy link');
+            }
+        } else if (platform === 'native' && navigator.share) {
+            try {
+                await navigator.share({
+                    title: shareTitle,
+                    url: shareUrl,
+                });
+            } catch (err) {
+                // User cancelled or error occurred
+            }
+        } else if (shareUrls[platform]) {
+            window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+        }
+
+        setShowShareMenu(false);
+    };
 
     if (!article) {
         return (
@@ -98,41 +149,38 @@ const HRNewsArticle = ({ id }: ArticleProps) => {
 
             {/* --- TOP BAR (Dashboard Style) --- */}
             <header className="bg-[#193153] border-b border-[#193153] sticky top-0 z-50 shadow-md">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="flex items-center gap-2 group">
-                            <div className="bg-white/10 p-1.5 rounded-lg group-hover:bg-[#ffdd59] transition-colors">
-                                <img src="/images/PhilSCA_Logo.png" alt="NAAP Logo" className="h-8 w-8 object-contain" />
-                            </div>
-                            <span className="font-bold text-xl tracking-tight text-white">NAAP <span className="text-blue-200 font-light">Newsroom</span></span>
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+                    <Link href="/" className="flex items-center space-x-3">
+                        <div className="bg-white/10 p-2 rounded-full h-12 w-12 flex items-center justify-center overflow-hidden">
+                            <img src="/images/PhilSCA_Logo.png" alt="NAAP Logo" className="h-full w-full object-contain" />
+                        </div>
+                        <div>
+                            <span className="font-bold text-lg block leading-none text-white">NAAP HR</span>
+                            <span className="text-[10px] text-blue-200 uppercase tracking-widest">Newsroom</span>
+                        </div>
+                    </Link>
+
+                    <nav className="hidden md:flex items-center space-x-6">
+                        <Link href="/" className="text-white hover:text-[#ffdd59] transition-colors text-sm font-medium">
+                            Home
                         </Link>
-                    </div>
+                        <Link href="/hr-news" className="text-[#ffdd59] font-semibold text-sm">
+                            HR News
+                        </Link>
+                        <Link href="/about" className="text-white hover:text-[#ffdd59] transition-colors text-sm font-medium">
+                            About
+                        </Link>
+                    </nav>
 
-                    <div className="hidden md:flex items-center gap-6">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search news..."
-                                className="pl-10 pr-4 py-2 rounded-full border border-transparent bg-white/10 text-white placeholder-blue-200 focus:bg-white focus:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffdd59] w-64 text-sm transition-all"
-                            />
-                        </div>
-
-                        <div className="h-8 w-8 bg-[#ffdd59] rounded-full text-[#193153] flex items-center justify-center font-bold text-sm border-2 border-white/20">
-                            G
-                        </div>
-                    </div>
-
-                    <button className="md:hidden p-2 text-white">
+                    <button className="md:hidden text-white">
                         <Menu className="h-6 w-6" />
                     </button>
                 </div>
             </header>
 
-            <main className="container mx-auto px-4 py-8">
-
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+            <main className="container mx-auto px-4 py-12">
+                {/* Breadcrumb */}
+                <div className="flex items-center text-sm text-gray-500 mb-8 space-x-2">
                     <Link href="/" className="hover:text-[#193153]">Home</Link>
                     <span>/</span>
                     <Link href="/hr-news" className="hover:text-[#193153]">HR News</Link>
@@ -162,9 +210,10 @@ const HRNewsArticle = ({ id }: ArticleProps) => {
                     </div>
 
                     <div className="p-8 sm:p-12">
-                        <div className="prose prose-lg text-gray-600 max-w-none">
-                            {article.content}
-                        </div>
+                        <div
+                            className="prose prose-lg text-gray-600 max-w-none"
+                            dangerouslySetInnerHTML={{ __html: formatTextToHTML(article.fullContent || article.content || '') }}
+                        />
 
                         {/* Footer Actions */}
                         <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-between">
@@ -176,11 +225,54 @@ const HRNewsArticle = ({ id }: ArticleProps) => {
                                 Back to HR News
                             </Link>
 
-                            <div className="flex items-center gap-2">
-                                <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowShareMenu(!showShareMenu)}
+                                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                >
                                     <Share2 className="h-5 w-5" />
+                                    <span className="text-sm font-medium">Share</span>
                                 </button>
-                                <span className="text-xs text-gray-400 font-medium uppercase">Share this post</span>
+
+                                {showShareMenu && (
+                                    <div className="absolute right-0 bottom-full mb-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[200px]">
+                                        <button
+                                            onClick={() => handleShare('facebook')}
+                                            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-blue-50 rounded-lg transition-colors text-left"
+                                        >
+                                            <Facebook className="h-5 w-5 text-blue-600" />
+                                            <span className="text-sm font-medium text-gray-700">Facebook</span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleShare('twitter')}
+                                            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-sky-50 rounded-lg transition-colors text-left"
+                                        >
+                                            <Twitter className="h-5 w-5 text-sky-500" />
+                                            <span className="text-sm font-medium text-gray-700">Twitter</span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleShare('linkedin')}
+                                            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-blue-50 rounded-lg transition-colors text-left"
+                                        >
+                                            <Linkedin className="h-5 w-5 text-blue-700" />
+                                            <span className="text-sm font-medium text-gray-700">LinkedIn</span>
+                                        </button>
+                                        <div className="border-t border-gray-200 my-2"></div>
+                                        <button
+                                            onClick={() => handleShare('copy')}
+                                            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
+                                        >
+                                            {copied ? (
+                                                <Check className="h-5 w-5 text-green-600" />
+                                            ) : (
+                                                <LinkIcon className="h-5 w-5 text-gray-600" />
+                                            )}
+                                            <span className="text-sm font-medium text-gray-700">
+                                                {copied ? 'Copied!' : 'Copy Link'}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -587,8 +587,8 @@ const generateMockApplications = (count: number) => {
         if (status === 'Shortlisted') baseScore = Math.floor(Math.random() * 15) + 80;
         if (status === 'Rejected') baseScore = Math.floor(Math.random() * 50) + 30;
 
-        // Date within last 30 days
-        const daysAgo = Math.floor(Math.random() * 30);
+        // Date within last 180 days (6 months) for better trend data
+        const daysAgo = Math.floor(Math.random() * 180);
         const date = new Date();
         date.setDate(date.getDate() - daysAgo);
         const dateStr = date.toISOString().split('T')[0];
@@ -944,10 +944,13 @@ export const getAnalyticsData = (campus?: string) => {
         unfilledPositions,
 
         // Data for "Applicants per Position" Bar Chart (Now dynamic)
-        applicantsPerPosition: filteredJobs.map(job => ({
-            position: job.title,
-            applicants: job.applicantCount || 0
-        })).sort((a, b) => b.applicants - a.applicants).slice(0, 5),
+        applicantsPerPosition: filteredJobs.map(job => {
+            const count = filteredApplications.filter(app => app.jobTitle === job.title).length;
+            return {
+                position: job.title,
+                applicants: count
+            };
+        }).sort((a, b) => b.applicants - a.applicants).slice(0, 5),
 
         // Data for "Hiring Timeline" Line Chart (Static)
         hiringTimeline: [
@@ -1140,5 +1143,217 @@ export const getLandingPageContent = (): LandingPageContent => {
 export const updateLandingPageContent = (newContent: LandingPageContent) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem('mock_cms_content', JSON.stringify(newContent));
+    window.dispatchEvent(new Event('storage'));
+};
+
+// --- HR NEWS DATA ---
+export interface HRNewsItem {
+    id: number;
+    title: string;
+    date: string;
+    category: string;
+    summary: string;
+    author?: string;
+    content?: string;
+    image?: string;
+    fullContent?: string; // Full HTML content for article page
+}
+
+const defaultHRNews: HRNewsItem[] = [
+    {
+        id: 1,
+        title: "NAAP Launches New Employee Wellness Program",
+        date: "June 05, 2026",
+        category: "Employee Welfare",
+        summary: "A comprehensive wellness initiative designed to support the physical and mental health of all NAAP employees. Features include gym memberships, mental health workshops, and flexible work arrangements.",
+        author: "HR Department",
+        content: "The National Aviation Academy of the Philippines (NAAP) is proud to announce the launch of its comprehensive Employee Wellness Program...",
+        fullContent: `The National Aviation Academy of the Philippines (NAAP) is proud to announce the launch of its comprehensive Employee Wellness Program, designed to prioritize the physical, mental, and emotional well-being of its workforce.
+
+Recognizing that a healthy team is a productive team, this initiative introduces a suite of benefits aimed at fostering a balanced work-life environment.
+
+Key Features of the Program:
+
+- Gym Memberships: Subsidized access to partner fitness centers.
+- Mental Health Support: Free access to counseling services and mental health workshops.
+- Flexible Work Arrangements: Options for remote work and flexible hours for eligible roles.
+- Annual Health Screenings: Comprehensive executive check-ups covered by the academy.
+
+"Our employees are our greatest asset," said the HR Director. "This program is a testament to our commitment to creating a supportive and nurturing environment where everyone can thrive."
+
+The program takes effect immediately, and employees are encouraged to visit the HR portal for enrollment details.`
+    },
+    {
+        id: 2,
+        title: "Mass Recruitment for Senior Instructors Begins",
+        date: "May 22, 2026",
+        category: "Recruitment",
+        summary: "In response to growing student enrollment, NAAP is opening positions for Senior Flight Instructors. We are looking for experienced pilots with a passion for teaching the next generation of aviators.",
+        author: "Talent Acquisition",
+        content: "In response to the surge in student enrollment for the upcoming academic year, NAAP is kicking off a Mass Recruitment Drive...",
+        fullContent: `In response to the surge in student enrollment for the upcoming academic year, NAAP is kicking off a Mass Recruitment Drive for Senior Flight Instructors.
+
+We are looking for experienced aviators with a passion for teaching to help shape the next generation of world-class pilots.
+
+Qualifications:
+
+- Valid Commercial Pilot License (CPL) with Instrument Rating.
+- Flight Instructor License (FI).
+- Minimum of 1,500 flight hours.
+- Strong communication and mentorship skills.
+
+Successful candidates will enjoy competitive compensation packages, opportunities for career advancement, and the chance to work with state-of-the-art flight simulation technology.
+
+Interested applicants may submit their CVs through the NAAP Careers Portal or visit the HR office for walk-in interviews starting June 1st.`
+    },
+    {
+        id: 3,
+        title: "Advanced Leadership Training for Admin Staff",
+        date: "May 10, 2026",
+        category: "Training & Dev",
+        summary: "Selected administrative staff will undergo a 3-day intensive leadership workshop. This program aims to enhance management skills and foster a culture of continuous improvement within the academy.",
+        author: "Learning & Development",
+        content: "NAAP invests in its future leaders with the rollout of the Advanced Leadership Training Workshop...",
+        fullContent: `NAAP invests in its future leaders with the rollout of the Advanced Leadership Training Workshop for selected administrative staff.
+
+This 3-day intensive program, held in partnership with top management consultants, aims to equip our admin team with the strategic skills needed to navigate the evolving aviation education landscape.
+
+Workshop Modules:
+
+- Strategic Decision Making
+- Conflict Resolution and Negotiation
+- Change Management
+- Innovation in Educational Administration
+
+Participants will engage in case studies, role-playing simulations, and peer coaching sessions. This initiative underscores NAAP's dedication to continuous professional development and internal promotion.`
+    },
+    {
+        id: 4,
+        title: "NAAP Achieves CSC PRIME-HRM Level 2 Maturity",
+        date: "June 12, 2026",
+        category: "Recognition",
+        summary: "The National Aviation Academy of the Philippines has been officially recognized by the Civil Service Commission for achieving Level 2 Maturity in the Program to Institutionalize Meritocracy and Excellence in Human Resource Management.",
+        author: "Office of the President",
+        content: "The National Aviation Academy of the Philippines has been officially recognized by the Civil Service Commission (CSC) for achieving Level 2 Maturity in PRIME-HRM...",
+        fullContent: `The National Aviation Academy of the Philippines has been officially recognized by the Civil Service Commission (CSC) for achieving Level 2 Maturity in the Program to Institutionalize Meritocracy and Excellence in Human Resource Management (PRIME-HRM).
+
+CORE HR SYSTEMS
+
+Recruitment, Selection & Placement
+Merit-based hiring ensuring only the most qualified aviation professionals join our ranks. We follow strict standards to uphold the quality of our force.
+
+Learning & Development
+Continuous capacity building through scholarships, trainings, and industry partnerships. We invest in the growth of our people.
+
+Performance Management
+Data-driven performance reviews that align individual goals with the Academy's mission. Transparency and objectiveness are key.
+
+Rewards & Recognition
+Recognizing excellence and service through a structured and transparent awards system. Motivating our workforce to reach greater heights.
+
+---
+
+MATURITY LEVEL 2
+Achieved: 2025-11-20
+Recognized for excellent HR management systems.
+
+---
+
+MEMORANDUM
+
+Office of the President
+
+To: All Department Heads, Faculty, and Staff
+From: Dr. Rolando A. Solis, Ph.D., College President
+Date: June 12, 2026
+Subject: GRANT OF CSC PRIME-HRM LEVEL 2 MATURITY STATUS
+
+I am pleased to announce that the Civil Service Commission (CSC) has officially conferred the Program to Institutionalize Meritocracy and Excellence in Human Resource Management (PRIME-HRM) Level 2 Maturity status to the National Aviation Academy of the Philippines.
+
+This recognition is a testament to our unwavering commitment to excellence in public service. The Academy has successfully met the rigorous standards set by the Commission in the four (4) core HRM systems:
+
+- Recruitment, Selection & Placement: Upholding meritocracy and fitness in our hiring processes.
+- Learning & Development: Ensuring continuous professional growth for our workforce.
+- Performance Management: Aligning individual performance with our organizational strategic goals.
+- Rewards & Recognition: Valuing the outstanding contributions of our employees.
+
+This achievement belongs to every member of the NAAP community. Your dedication and hard work have placed our institution among the elite agencies in the country with this level of HR maturity.
+
+Let this milestone inspire us to continue serving with integrity, excellence, and dedication.
+
+Signed,
+Dr. Rolando A. Solis, Ph.D.
+College President
+
+---
+
+EVENT HIGHLIGHTS
+
+MOA Signing Event
+Official MOA Signing Ceremony
+
+Assessment and Review
+CSC Assessment and Compliance Review`
+    }
+];
+
+export const getHRNews = (): HRNewsItem[] => {
+    if (typeof window === 'undefined') return defaultHRNews;
+    try {
+        const localNews = localStorage.getItem('mock_hr_news');
+        return localNews ? JSON.parse(localNews) : defaultHRNews;
+    } catch (e) {
+        return defaultHRNews;
+    }
+};
+
+export const updateHRNews = (newsItems: HRNewsItem[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('mock_hr_news', JSON.stringify(newsItems));
+    window.dispatchEvent(new Event('storage'));
+};
+
+// --- WELCOME PAGE ANNOUNCEMENTS ---
+export interface Announcement {
+    id: number;
+    image: string;
+    title: string;
+    description: string;
+}
+
+const defaultAnnouncements: Announcement[] = [
+    {
+        id: 1,
+        image: '/images/Dorm1.jpg',
+        title: "Enrollment Now Open for AY 2026-2027",
+        description: "Join the next generation of aviation professionals. Applications are now being accepted for all programs."
+    },
+    {
+        id: 2,
+        image: '/images/Dorm2.jpg',
+        title: "New Campus Facilities Unveiled",
+        description: "State-of-the-art flight simulators and modernized dormitories now available for student use."
+    },
+    {
+        id: 3,
+        image: '/images/dorm3.jpg',
+        title: "Career Fair: February 20, 2026",
+        description: "Meet with top aviation employers and explore exciting career opportunities in the industry."
+    }
+];
+
+export const getAnnouncements = (): Announcement[] => {
+    if (typeof window === 'undefined') return defaultAnnouncements;
+    try {
+        const localAnnouncements = localStorage.getItem('mock_announcements');
+        return localAnnouncements ? JSON.parse(localAnnouncements) : defaultAnnouncements;
+    } catch (e) {
+        return defaultAnnouncements;
+    }
+};
+
+export const updateAnnouncements = (announcements: Announcement[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('mock_announcements', JSON.stringify(announcements));
     window.dispatchEvent(new Event('storage'));
 };
