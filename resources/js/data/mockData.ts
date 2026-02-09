@@ -1044,6 +1044,42 @@ export const getStaffingData = () => {
     }
 };
 
+export const syncStaffingData = async () => {
+    // Simulate network delay for Google Sheet API
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Simulate fetching fresh data (randomly changing some statuses)
+    const freshData = mockStaffingData.map(item => {
+        // 10% chance to flip status for demo purposes
+        if (Math.random() > 0.9) {
+            return { ...item, status: item.status === 'Filled' ? 'Unfilled' : 'Filled' };
+        }
+        return item;
+    });
+
+    // Add a seeded "new" item if it doesn't exist yet
+    if (!freshData.find(i => i.id === 999)) {
+        freshData.push({
+            id: 999,
+            campus: 'Villamor',
+            office: 'Strategy Office',
+            position: 'Strategic Planning Officer IV',
+            sg: 22,
+            status: 'Unfilled'
+        });
+    }
+
+    if (typeof window !== 'undefined') {
+        // Save "synced" data to localStorage
+        // In a real app, this would be saving the response from the API
+        // Here we save it to the 'custom' key so getStaffingData picks it up
+        localStorage.setItem('mock_staffing_custom', JSON.stringify(freshData));
+        window.dispatchEvent(new Event('storage'));
+        return freshData;
+    }
+    return freshData;
+};
+
 
 // --- LANDING PAGE CMS DATA ---
 export interface CMSPost {

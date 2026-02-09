@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { getStaffingData } from '@/data/mockData';
+import { getStaffingData, syncStaffingData } from '@/data/mockData';
+import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function StaffingMonitoring({ auth }: { auth: any }) {
@@ -20,6 +21,8 @@ export default function StaffingMonitoring({ auth }: { auth: any }) {
     const [statusFilter, setStatusFilter] = useState('All');
 
     const [campuses, setCampuses] = useState<string[]>([]);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastSynced, setLastSynced] = useState<string | null>(null);
 
     React.useEffect(() => {
         const handleSync = () => {
@@ -57,6 +60,20 @@ export default function StaffingMonitoring({ auth }: { auth: any }) {
 
     const handleLogout = () => {
         router.post('/logout');
+    };
+
+    const handleSync = async () => {
+        setIsSyncing(true);
+        toast.info("Syncing with Google Sheet...");
+        try {
+            await syncStaffingData();
+            setLastSynced(new Date().toLocaleTimeString());
+            toast.success("Staffing data synced successfully!");
+        } catch (error) {
+            toast.error("Failed to sync data.");
+        } finally {
+            setIsSyncing(false);
+        }
     };
 
     const stats = {
@@ -129,16 +146,33 @@ export default function StaffingMonitoring({ auth }: { auth: any }) {
                 </div>
             </nav>
 
-            <main className="container mx-auto px-4 py-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            {/* Main Content */}
+            <div className="container mx-auto px-4 py-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-[#193153]">Staffing Monitoring</h1>
-                        <p className="text-gray-600">REVISED ORGANIZATION STAFFING STANDARD - PHASE I (As of August 28, 2025)</p>
+                        <h1 className="text-3xl font-bold text-gray-900">Staffing Monitoring</h1>
+                        <p className="text-gray-500">Track and manage staffing requirements across all campuses.</p>
+                        {lastSynced && (
+                            <p className="text-xs text-green-600 mt-1 font-medium flex items-center">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Last synced: {lastSynced}
+                            </p>
+                        )}
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-sm py-1 px-3">
-                            Last Sync: August 28, 2025
-                        </Badge>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={handleSync}
+                            disabled={isSyncing}
+                            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                        >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                            {isSyncing ? 'Syncing...' : 'Sync with Sheet'}
+                        </Button>
+                        <Button className="bg-[#193153] hover:bg-[#193153]/90">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add New Position
+                        </Button>
                     </div>
                 </div>
 
@@ -306,7 +340,7 @@ export default function StaffingMonitoring({ auth }: { auth: any }) {
                         </div>
                     </CardContent>
                 </Card>
-            </main>
+            </div>
         </div>
     );
 }

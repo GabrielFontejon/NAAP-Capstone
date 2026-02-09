@@ -252,8 +252,8 @@ export default function Welcome() {
                     <div className="inline-flex p-4 rounded-full bg-emerald-50 mb-6 group-hover:bg-[#193153] group-hover:text-[#ffdd59] transition-colors duration-300">
                       <Users className="h-10 w-10 text-emerald-600 group-hover:text-[#ffdd59] transition-colors duration-300" />
                     </div>
-                    <h3 className="text-5xl font-bold text-gray-900 mb-2">{displayHired}+</h3>
-                    <p className="text-base font-bold text-gray-500 uppercase tracking-widest">{cmsContent.hired.title}</p>
+                    <h3 className="text-5xl font-bold text-gray-900 mb-2">10+</h3>
+                    <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Professionals Hired</p>
                   </CardContent>
                 </Card>
               </div>
@@ -265,8 +265,8 @@ export default function Welcome() {
                     <div className="inline-flex p-4 rounded-full bg-purple-50 mb-6 group-hover:bg-[#ffdd59] group-hover:text-[#193153] transition-colors duration-300">
                       <Gift className="h-10 w-10 text-purple-600 group-hover:text-[#193153] transition-colors duration-300" />
                     </div>
-                    <h3 className="text-5xl font-bold text-gray-900 mb-2">{cmsContent.perks.title}</h3>
-                    <p className="text-base font-bold text-gray-500 uppercase tracking-widest">{cmsContent.perks.subtitle}</p>
+                    <h3 className="text-5xl font-bold text-gray-900 mb-2">Perks</h3>
+                    <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Employee Benefits & Rewards</p>
                   </CardContent>
                 </Card>
               </div>
@@ -278,8 +278,8 @@ export default function Welcome() {
                     <div className="inline-flex p-4 rounded-full bg-orange-50 mb-6 group-hover:bg-[#193153] group-hover:text-[#ffdd59] transition-colors duration-300">
                       <TrendingUp className="h-10 w-10 text-orange-600 group-hover:text-[#ffdd59] transition-colors duration-300" />
                     </div>
-                    <h3 className="text-5xl font-bold text-gray-900 mb-2">{cmsContent.achievements.title}</h3>
-                    <p className="text-base font-bold text-gray-500 uppercase tracking-widest">{cmsContent.achievements.subtitle}</p>
+                    <h3 className="text-5xl font-bold text-gray-900 mb-2">Level 2</h3>
+                    <p className="text-base font-bold text-gray-500 uppercase tracking-widest">CSC PRIME-HRM Recognition</p>
                   </CardContent>
                 </Card>
               </div>
