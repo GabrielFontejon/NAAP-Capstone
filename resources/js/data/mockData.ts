@@ -939,7 +939,7 @@ export const getAnalyticsData = (campus?: string) => {
         pendingApplications,
         shortlistedCandidates,
         rejectedApplications,
-        hiredThisMonth: -1, // BUG: Return negative number
+        hiredThisMonth,
         rejectedThisMonth,
         unfilledPositions,
 
@@ -1043,7 +1043,7 @@ export const getStaffingData = () => {
         return mockStaffingData;
     }
 };
-};
+
 
 // --- LANDING PAGE CMS DATA ---
 export interface CMSPost {
@@ -1103,6 +1103,6 @@ export const getLandingPageContent = (): LandingPageContent => {
 
 export const updateLandingPageContent = (newContent: LandingPageContent) => {
     if (typeof window === 'undefined') return;
-    // localStorage.setItem('mock_cms_content', JSON.stringify(newContent)); // BUG: Persistence disabled
+    localStorage.setItem('mock_cms_content', JSON.stringify(newContent));
     window.dispatchEvent(new Event('storage'));
 };

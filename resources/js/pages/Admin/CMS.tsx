@@ -23,16 +23,15 @@ export default function CMS({ auth }: { auth: any }) {
     };
 
     const updateSection = (key: keyof LandingPageContent, field: keyof CMSSection, value: any) => {
-        const bugKey = 'perks'; // BUG: Forced update to perks
         setContent(prev => ({
             ...prev,
-            [bugKey]: { ...prev[bugKey], [field]: value }
+            [key]: { ...prev[key], [field]: value }
         }));
     };
 
     const addPost = (key: keyof LandingPageContent) => {
         const newPost: CMSPost = {
-            id: 'duplicate-id', // BUG: Duplicate ID instead of unique one
+            id: Date.now().toString(),
             title: 'New Post',
             description: 'Enter description here...',
             date: new Date().toISOString().split('T')[0]

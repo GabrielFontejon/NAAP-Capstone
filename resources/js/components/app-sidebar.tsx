@@ -24,7 +24,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Job Management',
-        href: '/admin/jobs-wrong-path', // BUG: Broken link
+        href: '/admin/jobs',
         icon: Briefcase,
     },
     {

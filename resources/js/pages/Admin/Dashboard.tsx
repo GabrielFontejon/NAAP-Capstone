@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Users, Briefcase, FileText, Award, LogOut, BrokenShield, TrendingUp, UserCheck, UserX, MapPin, Menu, Calendar, Clock, ChevronRight, Download, XCircle, UserPlus } from 'lucide-react'; // BUG: Shield -> BrokenShield
+import { Users, Briefcase, FileText, Award, LogOut, Shield, TrendingUp, UserCheck, UserX, MapPin, Menu, Calendar, Clock, ChevronRight, Download, XCircle, UserPlus, Layout } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -26,7 +26,7 @@ import { getAnalyticsData, mockInterviews, mockActivities, getStaffingData, getJ
 export default function AdminDashboard({ auth }: { auth: any }) {
     const admin = auth?.user || { name: 'Admin' };
     const [analytics, setAnalytics] = useState(getAnalyticsData());
-    analytics.calculateEverything(); // BUG: Call to non-existent method
+    // analytics.calculateEverything(); // Fixed: removed non-existent method call
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // Initial load and sync
