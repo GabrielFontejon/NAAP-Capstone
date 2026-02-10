@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Search, Filter, MapPin, Briefcase, Clock, ArrowLeft, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Search, Filter, MapPin, Briefcase, Clock, ArrowLeft, User, LogOut, LayoutDashboard, Bookmark } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,6 +46,31 @@ export default function JobListings({ auth }: JobIndexProps) {
     const [departmentFilter, setDepartmentFilter] = useState('all');
     const [employmentFilter, setEmploymentFilter] = useState('all');
     const [locationFilter, setLocationFilter] = useState('all');
+    const [showSavedOnly, setShowSavedOnly] = useState(false);
+    const [savedJobIds, setSavedJobIds] = useState<any[]>([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('saved_jobs');
+        if (saved) {
+            try {
+                setSavedJobIds(JSON.parse(saved));
+            } catch (e) {
+                console.error('Failed to parse saved jobs', e);
+            }
+        }
+    }, []);
+
+    const toggleSaveJob = (e: React.MouseEvent, id: any) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const newSaved = savedJobIds.includes(id)
+            ? savedJobIds.filter(sid => sid !== id)
+            : [...savedJobIds, id];
+
+        setSavedJobIds(newSaved);
+        localStorage.setItem('saved_jobs', JSON.stringify(newSaved));
+        toast.success(savedJobIds.includes(id) ? 'Job removed from saved' : 'Job saved successfully');
+    };
 
     const filteredJobs = jobs.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,8 +80,9 @@ export default function JobListings({ auth }: JobIndexProps) {
         const matchesDepartment = departmentFilter === 'all' || job.department === departmentFilter;
         const matchesEmployment = employmentFilter === 'all' || job.employmentType === employmentFilter;
         const matchesLocation = locationFilter === 'all' || job.location === locationFilter;
+        const matchesSaved = !showSavedOnly || savedJobIds.includes(job.id);
 
-        return matchesSearch && matchesDepartment && matchesEmployment && matchesLocation && job.status === 'Open';
+        return matchesSearch && matchesDepartment && matchesEmployment && matchesLocation && matchesSaved && job.status === 'Open';
     });
 
     return (
@@ -151,6 +178,14 @@ export default function JobListings({ auth }: JobIndexProps) {
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <Button
+                                variant={showSavedOnly ? "default" : "outline"}
+                                className={`w-full justify-start ${showSavedOnly ? 'bg-[#193153] text-white hover:bg-[#193153]/90 hover:text-[#ffdd59]' : 'hover:bg-[#193153] hover:text-[#ffdd59] hover:border-[#193153]'}`}
+                                onClick={() => setShowSavedOnly(!showSavedOnly)}
+                            >
+                                <Bookmark className={`h-4 w-4 mr-2 ${showSavedOnly ? 'fill-[#ffdd59] text-[#ffdd59]' : ''}`} />
+                                {showSavedOnly ? 'Showing Saved Jobs' : 'Show Saved Jobs'}
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -170,7 +205,8 @@ export default function JobListings({ auth }: JobIndexProps) {
                                     setSearchTerm('');
                                     setDepartmentFilter('all');
                                     setEmploymentFilter('all');
-                                    setLocationFilter('all'); // Clear location filter
+                                    setLocationFilter('all');
+                                    setShowSavedOnly(false);
                                 }}
                             >
                                 Clear Filters
@@ -192,7 +228,8 @@ export default function JobListings({ auth }: JobIndexProps) {
                                         setSearchTerm('');
                                         setDepartmentFilter('all');
                                         setEmploymentFilter('all');
-                                        setLocationFilter('all'); // Clear all filters
+                                        setLocationFilter('all');
+                                        setShowSavedOnly(false);
                                     }}
                                 >
                                     Clear All Filters
@@ -205,7 +242,9 @@ export default function JobListings({ auth }: JobIndexProps) {
                                 <CardContent className="p-6">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex-1">
-                                            <h3 className="text-2xl font-bold text-[#193153] mb-2">{job.title}</h3>
+                                            <div className="mb-2">
+                                                <h3 className="text-2xl font-bold text-[#193153] m-0">{job.title}</h3>
+                                            </div>
                                             <div className="flex flex-wrap gap-3 mb-3">
                                                 <div className="flex items-center text-gray-600">
                                                     <Briefcase className="h-4 w-4 mr-1" />
@@ -220,7 +259,7 @@ export default function JobListings({ auth }: JobIndexProps) {
                                                     Posted {new Date(job.postedDate).toLocaleDateString()}
                                                 </div>
                                             </div>
-                                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                            <Badge variant="secondary" className="bg-blue-50 text-[#193153] border border-blue-100">
                                                 {job.employmentType}
                                             </Badge>
                                             {job.salaryGrade && (
@@ -229,9 +268,20 @@ export default function JobListings({ auth }: JobIndexProps) {
                                                 </Badge>
                                             )}
                                         </div>
-                                        <Badge variant="outline" className="ml-4">
-                                            {job.applicantCount} applicants
-                                        </Badge>
+                                        <div className="flex flex-col items-end gap-3 ml-4">
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className={`h-10 w-10 rounded-full transition-all border shadow-sm ${savedJobIds.includes(job.id) ? 'bg-[#193153] border-[#193153] text-[#ffdd59]' : 'bg-white border-gray-200 text-gray-400 hover:text-[#193153] hover:border-[#193153] hover:bg-blue-50'}`}
+                                                onClick={(e) => toggleSaveJob(e, job.id)}
+                                                title={savedJobIds.includes(job.id) ? "Remove from saved" : "Save job"}
+                                            >
+                                                <Bookmark className={`h-5 w-5 ${savedJobIds.includes(job.id) ? 'fill-[#ffdd59]' : ''}`} />
+                                            </Button>
+                                            <Badge variant="outline" className="text-xs text-gray-500 font-normal border-gray-200 bg-gray-50">
+                                                {job.applicantCount} applicants
+                                            </Badge>
+                                        </div>
                                     </div>
                                     <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
                                     <div className="flex items-center justify-between">
@@ -239,7 +289,7 @@ export default function JobListings({ auth }: JobIndexProps) {
                                             Deadline: {new Date(job.deadline).toLocaleDateString()}
                                         </p>
                                         <Link href={`/jobs/${job.id}`}>
-                                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                                            <Button className="bg-[#193153] text-white hover:bg-[#193153]/90 hover:text-[#ffdd59] shadow-md">
                                                 View Details
                                             </Button>
                                         </Link>

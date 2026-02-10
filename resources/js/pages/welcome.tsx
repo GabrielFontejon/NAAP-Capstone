@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 
 // --- COMPONENTS ---
 const Button = ({ className, variant = "default", size = "default", children, ...props }: any) => {
-  const baseStyles = "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95";
+  const baseStyles = "cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95";
 
   const variants = {
     default: "bg-blue-600 text-white hover:bg-blue-700 shadow-md",
@@ -278,33 +278,35 @@ export default function Welcome() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16">
               {featuredJobs.map((job) => (
-                <Card key={job.id} className="flex flex-col border border-gray-100 hover:border-[#193153] hover:shadow-2xl transition-all duration-300 group">
-                  <CardContent className="p-8 flex flex-col h-full">
-                    <div className="mb-6 flex justify-between items-start">
-                      <span className="inline-block px-3 py-1 rounded bg-blue-50 text-[#193153] text-sm font-bold uppercase tracking-wide">
-                        {job.employmentType}
-                      </span>
-                      <span className="text-[#ffdd59] opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ArrowRight className="h-6 w-6" />
-                      </span>
-                    </div>
-                    {job.salaryGrade && (
-                      <div className="mb-4">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100 uppercase tracking-tighter">
-                          SG {job.salaryGrade} • ₱{SALARY_GRADE_MAP[job.salaryGrade]?.toLocaleString()}
+                <Link key={job.id} href={`/jobs/${job.id}`} className="block h-full group">
+                  <Card className="flex flex-col h-full border border-gray-100 hover:border-[#193153] hover:shadow-2xl transition-all duration-300">
+                    <CardContent className="p-8 flex flex-col h-full">
+                      <div className="mb-6 flex justify-between items-start">
+                        <span className="inline-block px-3 py-1 rounded bg-blue-50 text-[#193153] text-sm font-bold uppercase tracking-wide">
+                          {job.employmentType}
+                        </span>
+                        <span className="text-[#ffdd59] opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ArrowRight className="h-6 w-6" />
                         </span>
                       </div>
-                    )}
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-[#193153] transition-colors">{job.title}</h3>
-                    <p className="text-sm font-medium text-gray-500 mb-6 flex items-center gap-2">
-                      {job.department} • {job.location}
-                    </p>
-                    <p className="text-gray-600 mb-8 line-clamp-3 text-base leading-relaxed flex-grow">{job.description}</p>
-                    <Link href={`/jobs/${job.id}`} className="mt-auto">
-                      <Button variant="outlineDark" className="w-full font-semibold">View Details</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+                      {job.salaryGrade && (
+                        <div className="mb-4">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100 uppercase tracking-tighter">
+                            SG {job.salaryGrade} • ₱{SALARY_GRADE_MAP[job.salaryGrade]?.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-[#193153] transition-colors">{job.title}</h3>
+                      <p className="text-sm font-medium text-gray-500 mb-6 flex items-center gap-2">
+                        {job.department} • {job.location}
+                      </p>
+                      <p className="text-gray-600 mb-8 line-clamp-3 text-base leading-relaxed flex-grow">{job.description}</p>
+                      <div className="mt-auto">
+                        <Button variant="outlineDark" className="w-full font-semibold">View Details</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
 

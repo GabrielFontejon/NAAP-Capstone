@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { mockJobs, SALARY_GRADE_MAP, getJobs } from '@/data/mockData';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
+import { calculateAIScore } from '@/utils/aiScoring';
 import {
     Dialog,
     DialogContent,
@@ -128,6 +129,16 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
             // Create a mock application object compatible with Admin Dashboard
             const fullName = `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}${formData.extensionName ? ' ' + formData.extensionName : ''}`.trim();
 
+            // Calculate AI Score
+            const scoreBreakdown = calculateAIScore({
+                educationLevel: formData.educationLevel,
+                requiredEducation: 'bachelor', // Default requirement, can be job-specific
+                yearsOfExperience: parseInt(formData.yearsOfExperience) || 0,
+                requiredYearsOfExperience: 2, // Default requirement, can be job-specific
+                awards: formData.awards,
+                trainingHours: parseInt(formData.trainingHours) || 0
+            });
+
             const newApplication = {
                 id: Date.now(), // Simple unique ID
                 applicantName: fullName,
@@ -138,7 +149,18 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                 location: job?.location || 'Unknown Location',
                 status: 'Submitted',
                 submittedDate: new Date().toISOString().split('T')[0],
-                aiScore: Math.floor(Math.random() * 20) + 80, // Random high score for demo
+                // AI Scoring data
+                aiScore: scoreBreakdown.total,
+                aiScoreBreakdown: {
+                    education: scoreBreakdown.education,
+                    experience: scoreBreakdown.experience,
+                    accomplishments: scoreBreakdown.accomplishments,
+                    training: scoreBreakdown.training
+                },
+                educationLevel: formData.educationLevel,
+                yearsOfExperience: parseInt(formData.yearsOfExperience) || 0,
+                awards: formData.awards,
+                trainingHours: parseInt(formData.trainingHours) || 0,
                 education: 'College Graduate', // Placeholder
                 experience: 'See Resume',      // Placeholder
                 skills: ['Communication', 'Teamwork', 'Aviation Knowledge'], // Placeholder skills
@@ -555,7 +577,131 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                             </div>
                         </div>
 
-                        {/* 5. Documents */}
+                        {/* 5. AI Scoring Information */}
+                        <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h3 className="font-bold text-lg text-[#193153] border-b border-blue-300 pb-2 flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5" /> Qualification Assessment
+                            </h3>
+                            <p className="text-sm text-gray-600">This information helps us match you with the right opportunities.</p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Education Level */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="educationLevel">Highest Educational Attainment *</Label>
+                                    <Select value={formData.educationLevel} onValueChange={(val) => setFormData({ ...formData, educationLevel: val as any })} required>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select education level" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
+                                            <SelectItem value="masters">Master's Degree</SelectItem>
+                                            <SelectItem value="doctoral_9-15">Doctoral Studies (9-15 units)</SelectItem>
+                                            <SelectItem value="doctoral_15-18">Doctoral Studies (15-18 units)</SelectItem>
+                                            <SelectItem value="doctoral_18-24">Doctoral Studies (18-24 units)</SelectItem>
+                                            <SelectItem value="doctoral_27+">Doctoral Studies (27+ units)</SelectItem>
+                                            <SelectItem value="doctoral_graduate">Doctoral Degree Graduate</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Years of Experience */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="yearsOfExperience">Years of Relevant Work Experience *</Label>
+                                    <Input
+                                        id="yearsOfExperience"
+                                        type="number"
+                                        min="0"
+                                        max="50"
+                                        value={formData.yearsOfExperience}
+                                        onChange={(e) => setFormData({ ...formData, yearsOfExperience: e.target.value })}
+                                        placeholder="0"
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-500">Enter total years in related field</p>
+                                </div>
+
+                                {/* Training Hours */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="trainingHours">Total Training Hours (Relevant) *</Label>
+                                    <Input
+                                        id="trainingHours"
+                                        type="number"
+                                        min="0"
+                                        max="1000"
+                                        value={formData.trainingHours}
+                                        onChange={(e) => setFormData({ ...formData, trainingHours: e.target.value })}
+                                        placeholder="0"
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-500">Include seminars, workshops, certifications</p>
+                                </div>
+
+                                {/* Awards/Accomplishments */}
+                                <div className="space-y-2">
+                                    <Label>Awards & Recognition (Optional)</Label>
+                                    <div className="space-y-2 pt-1">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="award-national"
+                                                checked={formData.awards.includes('national')}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setFormData({ ...formData, awards: [...formData.awards, 'national'] });
+                                                    } else {
+                                                        setFormData({ ...formData, awards: formData.awards.filter(a => a !== 'national') });
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="award-national" className="font-normal cursor-pointer">National Award</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="award-csc"
+                                                checked={formData.awards.includes('csc')}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setFormData({ ...formData, awards: [...formData.awards, 'csc'] });
+                                                    } else {
+                                                        setFormData({ ...formData, awards: formData.awards.filter(a => a !== 'csc') });
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="award-csc" className="font-normal cursor-pointer">Civil Service Commission Award</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="award-president"
+                                                checked={formData.awards.includes('president')}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setFormData({ ...formData, awards: [...formData.awards, 'president'] });
+                                                    } else {
+                                                        setFormData({ ...formData, awards: formData.awards.filter(a => a !== 'president') });
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="award-president" className="font-normal cursor-pointer">President's Award</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="award-ngo"
+                                                checked={formData.awards.includes('ngo')}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setFormData({ ...formData, awards: [...formData.awards, 'ngo'] });
+                                                    } else {
+                                                        setFormData({ ...formData, awards: formData.awards.filter(a => a !== 'ngo') });
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="award-ngo" className="font-normal cursor-pointer">NGO/Accredited Organization Award</Label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 6. Documents */}
                         <div className="space-y-4">
                             <h3 className="font-bold text-lg text-[#193153] border-b pb-2 flex items-center gap-2">
                                 <Upload className="w-5 h-5" /> Requirements

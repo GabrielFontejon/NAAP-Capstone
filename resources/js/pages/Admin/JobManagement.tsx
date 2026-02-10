@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Shield, LogOut, Plus, Edit, Archive, Eye, Users, Briefcase, Layout } from 'lucide-react';
+import { Shield, LogOut, Plus, Edit, Archive, Eye, Users, Briefcase, Layout, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -73,6 +73,12 @@ export default function JobManagement({ auth }: { auth: any }) {
       coe: null as File | null,
     }
   });
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [campusFilter, setCampusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState('all');
 
   const handleLogout = () => {
     router.post('/logout');
@@ -222,6 +228,16 @@ export default function JobManagement({ auth }: { auth: any }) {
     const file = e.target.files ? e.target.files[0] : null;
     setNewJob({ ...newJob, uploads: { ...newJob.uploads, [field]: file } });
   };
+
+  // Filter jobs based on search and filters
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.department.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCampus = campusFilter === 'all' || job.location.includes(campusFilter);
+    const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
+    const matchesEmploymentType = employmentTypeFilter === 'all' || job.employmentType === employmentTypeFilter;
+    return matchesSearch && matchesCampus && matchesStatus && matchesEmploymentType;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -532,6 +548,54 @@ export default function JobManagement({ auth }: { auth: any }) {
         {/* Jobs Table */}
         <Card>
           <CardContent className="p-6">
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div className="flex-1 min-w-[250px]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search by job title or department..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Select value={campusFilter} onValueChange={setCampusFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by campus" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Campuses</SelectItem>
+                  <SelectItem value="Villamor">Villamor Campus</SelectItem>
+                  <SelectItem value="Basa Air Base">Basa Air Base Campus</SelectItem>
+                  <SelectItem value="Fernando Air Base">Fernando Air Base Campus</SelectItem>
+                  <SelectItem value="Basa-Palmayo">Basa-Palmayo Extension</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Employment type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Full-time">Full-time</SelectItem>
+                  <SelectItem value="Part-time">Part-time</SelectItem>
+                  <SelectItem value="Contract">Contract</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -549,59 +613,70 @@ export default function JobManagement({ auth }: { auth: any }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {jobs.map((job) => (
-                    <TableRow key={job.id}>
-                      <TableCell className="font-medium">{job.title}</TableCell>
-                      <TableCell>{job.department}</TableCell>
-                      <TableCell className="text-gray-600">{job.location}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-gray-700">SG {job.salaryGrade}</span>
-                          <span className="text-[10px] text-blue-600 font-medium">₱{SALARY_GRADE_MAP[job.salaryGrade]?.toLocaleString()}/mo</span>
-                        </div>
+                  {filteredJobs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center text-gray-500 py-8">
+                        No jobs found matching your filters
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{job.employmentType}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Users className="h-4 w-4 mr-1 text-gray-400" />
-                          {job.applicantCount}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`
+                    </TableRow>
+                  ) : (
+                    filteredJobs.map((job) => (
+                      <TableRow key={job.id}>
+                        <TableCell className="font-medium">{job.title}</TableCell>
+                        <TableCell>{job.department}</TableCell>
+                        <TableCell className="text-gray-600">{job.location}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-gray-700">SG {job.salaryGrade}</span>
+                            <span className="text-[10px] text-blue-600 font-medium">₱{SALARY_GRADE_MAP[job.salaryGrade]?.toLocaleString()}/mo</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{job.employmentType}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Users className="h-4 w-4 mr-1 text-gray-400" />
+                            {job.applicantCount}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`
                           ${job.status === 'Open' ? 'bg-green-100 text-green-800' : ''}
                           ${job.status === 'Closed' ? 'bg-red-100 text-red-800' : ''}
                         `}>
-                          {job.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(job.postedDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(job.deadline).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Link href={`/jobs/${job.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-3 w-3" />
+                            {job.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(job.postedDate).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(job.deadline).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Link href={`/jobs/${job.id}`}>
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            </Link>
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(job)}>
+                              <Edit className="h-3 w-3" />
                             </Button>
-                          </Link>
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(job)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDelete(job.id)}>
-                            <Archive className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            <Button variant="outline" size="sm" onClick={() => handleDelete(job.id)}>
+                              <Archive className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
+            </div>
+            <div className="mt-4 text-sm text-gray-600">
+              Showing {filteredJobs.length} of {jobs.length} jobs
             </div>
           </CardContent>
         </Card>

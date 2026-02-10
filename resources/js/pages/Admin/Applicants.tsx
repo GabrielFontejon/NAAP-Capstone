@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Shield, Users, LogOut, Search, Download, Star, Calendar, Eye, Edit, Trash, Plus, ChevronDown, ChevronUp, Briefcase, Layout } from 'lucide-react';
+import { Shield, Users, LogOut, Search, Download, Star, Calendar, Eye, Edit, Trash, Plus, ChevronDown, ChevronUp, Briefcase, Layout, TrendingUp, GraduationCap, Award, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,9 +73,23 @@ export default function Applicants({ auth }: { auth: any }) {
         router.post('/logout');
     };
 
+    const scoreToPercentage = (score: number) => {
+        return Math.round((score / 45) * 100);
+    };
+
+    const getScoreRating = (score: number) => {
+        const percentage = scoreToPercentage(score);
+        if (percentage >= 90) return { label: 'Excellent', color: 'green' };
+        if (percentage >= 80) return { label: 'Very Good', color: 'blue' };
+        if (percentage >= 70) return { label: 'Good', color: 'cyan' };
+        if (percentage >= 60) return { label: 'Satisfactory', color: 'yellow' };
+        return { label: 'Needs Improvement', color: 'red' };
+    };
+
     const getAiMatch = (score: number) => {
-        if (score >= 80) return 'High Match';
-        if (score >= 50) return 'Medium Match';
+        const percentage = scoreToPercentage(score);
+        if (percentage >= 80) return 'High Match';
+        if (percentage >= 50) return 'Medium Match';
         return 'Low Match';
     };
 
@@ -393,6 +407,7 @@ export default function Applicants({ auth }: { auth: any }) {
                                         <TableHead>Position</TableHead>
                                         <TableHead>Campus</TableHead>
                                         <TableHead>AI Score</TableHead>
+                                        <TableHead>Breakdown</TableHead>
                                         <TableHead>Match</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Date</TableHead>
@@ -415,18 +430,192 @@ export default function Applicants({ auth }: { auth: any }) {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center">
-                                                    <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-24 bg-gray-200 rounded-full h-2">
                                                         <div
-                                                            className={`h-2 rounded-full ${app.aiScore >= 80 ? 'bg-green-500' :
-                                                                app.aiScore >= 50 ? 'bg-yellow-500' :
-                                                                    'bg-red-500'
-                                                                }`}
-                                                            style={{ width: `${app.aiScore}%` }}
+                                                            className="bg-blue-600 h-2 rounded-full"
+                                                            style={{ width: `${Math.min(scoreToPercentage(app.aiScore || 0), 100)}%` }}
                                                         />
                                                     </div>
-                                                    <span className="text-sm font-semibold">{app.aiScore}%</span>
+                                                    <span className="text-sm font-semibold">{app.aiScore || 0}/45</span>
                                                 </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">
+                                                            <TrendingUp className="w-4 h-4 mr-1" />
+                                                            View
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                                        <DialogHeader>
+                                                            <DialogTitle className="flex items-center gap-2">
+                                                                <TrendingUp className="w-5 h-5 text-blue-600" />
+                                                                Score Breakdown - {app.applicantName}
+                                                            </DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="space-y-4 pb-4">
+                                                            {(() => {
+                                                                const breakdown = app.aiScoreBreakdown || {
+                                                                    education: 0,
+                                                                    experience: 0,
+                                                                    accomplishments: 0,
+                                                                    training: 0
+                                                                };
+                                                                const totalScore = app.aiScore || 0;
+
+                                                                return (
+                                                                    <>
+                                                                        {/* Overall Score */}
+                                                                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <span className="text-sm font-medium text-gray-700">Overall Score</span>
+                                                                                <span className="text-2xl font-bold text-[#193153]">
+                                                                                    {totalScore} <span className="text-sm text-gray-500">/ 45 pts</span>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                                                                                <div
+                                                                                    className={`h-3 rounded-full ${scoreToPercentage(totalScore) >= 90 ? 'bg-green-500' :
+                                                                                        scoreToPercentage(totalScore) >= 80 ? 'bg-blue-500' :
+                                                                                            scoreToPercentage(totalScore) >= 70 ? 'bg-cyan-500' :
+                                                                                                scoreToPercentage(totalScore) >= 60 ? 'bg-yellow-500' :
+                                                                                                    'bg-red-500'
+                                                                                        }`}
+                                                                                    style={{ width: `${Math.min(scoreToPercentage(totalScore), 100)}%` }}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span className="text-sm text-gray-600">{scoreToPercentage(totalScore)}% Match</span>
+                                                                                <Badge className={
+                                                                                    getScoreRating(totalScore).color === 'green' ? 'bg-green-100 text-green-800' :
+                                                                                        getScoreRating(totalScore).color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                                                                                            getScoreRating(totalScore).color === 'cyan' ? 'bg-cyan-100 text-cyan-800' :
+                                                                                                getScoreRating(totalScore).color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                                                                                                    'bg-red-100 text-red-800'
+                                                                                }>
+                                                                                    {getScoreRating(totalScore).label}
+                                                                                </Badge>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Score Breakdown */}
+                                                                        <div className="space-y-3">
+                                                                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Score Breakdown</p>
+
+                                                                            {/* Education */}
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                                                                    <GraduationCap className="w-4 h-4 text-purple-600" />
+                                                                                </div>
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                        <span className="text-sm font-medium">Education</span>
+                                                                                        <span className="text-sm font-bold">{breakdown.education}/5</span>
+                                                                                    </div>
+                                                                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                                                                                        <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${(breakdown.education / 5) * 100}%` }} />
+                                                                                    </div>
+                                                                                    {app.educationLevel ? (
+                                                                                        <p className="text-xs text-gray-600 mt-1">
+                                                                                            <span className="font-medium">Level:</span> {
+                                                                                                app.educationLevel === 'bachelor' ? "Bachelor's Degree" :
+                                                                                                    app.educationLevel === 'masters' ? "Master's Degree" :
+                                                                                                        app.educationLevel === 'doctoral_9-15' ? "Doctoral (9-15 units)" :
+                                                                                                            app.educationLevel === 'doctoral_15-18' ? "Doctoral (15-18 units)" :
+                                                                                                                app.educationLevel === 'doctoral_18-24' ? "Doctoral (18-24 units)" :
+                                                                                                                    app.educationLevel === 'doctoral_27+' ? "Doctoral (27+ units)" :
+                                                                                                                        app.educationLevel === 'doctoral_graduate' ? "Doctoral Graduate" :
+                                                                                                                            app.educationLevel
+                                                                                            }
+                                                                                        </p>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-400 italic mt-1">Data not available</p>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Experience */}
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                                                                    <Briefcase className="w-4 h-4 text-blue-600" />
+                                                                                </div>
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                        <span className="text-sm font-medium">Work Experience</span>
+                                                                                        <span className="text-sm font-bold">{breakdown.experience}/25</span>
+                                                                                    </div>
+                                                                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                                                                                        <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${(breakdown.experience / 25) * 100}%` }} />
+                                                                                    </div>
+                                                                                    {app.yearsOfExperience !== undefined ? (
+                                                                                        <p className="text-xs text-gray-600 mt-1">
+                                                                                            <span className="font-medium">Years:</span> {app.yearsOfExperience} years
+                                                                                        </p>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-400 italic mt-1">Data not available</p>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Awards */}
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                                                                                    <Award className="w-4 h-4 text-yellow-600" />
+                                                                                </div>
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                        <span className="text-sm font-medium">Awards & Recognition</span>
+                                                                                        <span className="text-sm font-bold">{breakdown.accomplishments}/5</span>
+                                                                                    </div>
+                                                                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                                                                                        <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: `${(breakdown.accomplishments / 5) * 100}%` }} />
+                                                                                    </div>
+                                                                                    {app.awards && app.awards.length > 0 ? (
+                                                                                        <p className="text-xs text-gray-600 mt-1">
+                                                                                            <span className="font-medium">Received:</span> {app.awards.map((award: string) =>
+                                                                                                award === 'national' ? 'National Award' :
+                                                                                                    award === 'csc' ? 'CSC Award' :
+                                                                                                        award === 'president' ? "President's Award" :
+                                                                                                            award === 'ngo' ? 'NGO Award' : award
+                                                                                            ).join(', ')}
+                                                                                        </p>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-500 mt-1">No awards listed</p>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Training */}
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                                                                    <BookOpen className="w-4 h-4 text-green-600" />
+                                                                                </div>
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                        <span className="text-sm font-medium">Training Hours</span>
+                                                                                        <span className="text-sm font-bold">{breakdown.training}/10</span>
+                                                                                    </div>
+                                                                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                                                                                        <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${(breakdown.training / 10) * 100}%` }} />
+                                                                                    </div>
+                                                                                    {app.trainingHours !== undefined ? (
+                                                                                        <p className="text-xs text-gray-600 mt-1">
+                                                                                            <span className="font-medium">Hours:</span> {app.trainingHours} hours
+                                                                                        </p>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-400 italic mt-1">Data not available</p>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="secondary" className={getMatchColor(getAiMatch(app.aiScore))}>

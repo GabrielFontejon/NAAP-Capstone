@@ -122,7 +122,7 @@ export default function Calendar() {
                 <div className="container mx-auto px-4">
                     <div className="flex items-center gap-4 mb-6">
                         <Link href="/dashboard">
-                            <Button variant="ghost" className="text-white hover:bg-white/10">
+                            <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-[#ffdd59]">
                                 <ChevronLeft className="mr-2 h-4 w-4" />
                                 Back to Dashboard
                             </Button>

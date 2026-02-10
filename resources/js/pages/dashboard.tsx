@@ -28,7 +28,7 @@ import {
     Camera
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { mockApplications, mockEvents, getApplications, getDynamicNotifications } from '@/data/mockData';
+import { mockApplications, mockEvents, getApplications, getDynamicNotifications, getJobs } from '@/data/mockData';
 
 // --- SHARED COMPONENTS ---
 
@@ -405,6 +405,36 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
         }
     };
 
+    const [savedJobDetails, setSavedJobDetails] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadSavedJobs = () => {
+            const savedIds = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
+            const allJobs = getJobs();
+            const details = allJobs.filter(job => savedIds.includes(job.id));
+            setSavedJobDetails(details);
+        };
+
+        loadSavedJobs();
+
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'saved_jobs' || e.key === 'mock_jobs_custom') {
+                loadSavedJobs();
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, []);
+
+    const removeSavedJob = (id: number) => {
+        const savedIds = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
+        const newIds = savedIds.filter((sid: number) => sid !== id);
+        localStorage.setItem('saved_jobs', JSON.stringify(newIds));
+        setSavedJobDetails(prev => prev.filter(job => job.id !== id));
+        toast.success("Job removed from bookmarks");
+        window.dispatchEvent(new StorageEvent('storage', { key: 'saved_jobs' }));
+    };
+
     // Stats Logic
     const statusCounts = {
         total: myApplications.length,
@@ -466,6 +496,18 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
     const timelineRef = useRef<HTMLDivElement>(null);
 
     const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+    const handleViewNotifications = () => {
+        setNotificationsOpen(!notificationsOpen);
+        if (!notificationsOpen && notifications.some(n => !n.isRead)) {
+            const allIds = notifications.map(n => n.id);
+            const currentRead = JSON.parse(localStorage.getItem('read_notifications') || '[]');
+            const newRead = [...new Set([...currentRead, ...allIds])];
+            localStorage.setItem('read_notifications', JSON.stringify(newRead));
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'read_notifications' }));
+        }
+    };
 
     // Sync across tabs
     useEffect(() => {
@@ -531,11 +573,13 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
                                 {/* Notification Bell */}
                                 <div className="relative">
                                     <button
-                                        onClick={() => setNotificationsOpen(!notificationsOpen)}
+                                        onClick={handleViewNotifications}
                                         className="p-2 hover:bg-white/10 rounded-full transition-colors relative"
                                     >
                                         <Bell className="w-5 h-5 text-white" />
-                                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[#193153]"></span>
+                                        {notifications.some(n => !n.isRead) && (
+                                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[#193153]"></span>
+                                        )}
                                     </button>
 
                                     {notificationsOpen && (
@@ -804,6 +848,68 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
                                                 <Button variant="outlineDark" size="sm" className="text-xs bg-white w-full mt-2">View Full Calendar</Button>
                                             </Link>
                                         </div>
+                                    </Card>
+
+                                    {/* Saved Jobs Card */}
+                                    <Card className="bg-white border-none shadow-lg overflow-hidden mb-6">
+                                        <div className="bg-[#193153] p-4 text-white flex justify-between items-center">
+                                            <h3 className="font-bold flex items-center gap-2">
+                                                <Bookmark className="w-4 h-4 text-[#ffdd59] fill-[#ffdd59]" />
+                                                Saved Jobs
+                                            </h3>
+                                            <span className="text-xs font-bold bg-white/20 text-white px-2 py-0.5 rounded-full">
+                                                {savedJobDetails.length}
+                                            </span>
+                                        </div>
+                                        <div className="p-4 bg-gray-50 max-h-[300px] overflow-y-auto space-y-3">
+                                            {savedJobDetails.length === 0 ? (
+                                                <div className="text-center py-6 text-gray-500">
+                                                    <Bookmark className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                                                    <p className="text-sm">No saved jobs yet.</p>
+                                                    <Link href="/jobs" className="text-xs text-blue-600 hover:underline mt-1 block">
+                                                        Browse available positions
+                                                    </Link>
+                                                </div>
+                                            ) : (
+                                                savedJobDetails.map(job => (
+                                                    <div key={job.id} className="relative bg-white p-3 rounded-lg border border-gray-100 shadow-sm hover:border-[#193153] transition-colors group">
+                                                        <Link href={`/jobs/${job.id}`} className="block pr-6">
+                                                            <h4 className="font-bold text-sm text-[#193153] line-clamp-1 group-hover:text-blue-600 transition-colors">{job.title}</h4>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <span className="text-xs text-gray-500 flex items-center gap-1">
+                                                                    <Briefcase className="w-3 h-3" /> {job.department}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-2 flex items-center justify-between">
+                                                                <span className="text-[10px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">
+                                                                    {job.employmentType}
+                                                                </span>
+                                                                <span className="text-[10px] text-green-600 font-bold hover:underline">
+                                                                    View
+                                                                </span>
+                                                            </div>
+                                                        </Link>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                removeSavedJob(job.id);
+                                                            }}
+                                                            className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50"
+                                                            title="Remove bookmark"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                        {savedJobDetails.length > 0 && (
+                                            <div className="p-3 bg-white border-t border-gray-100 text-center">
+                                                <Link href="/jobs" className="text-xs font-bold text-[#193153] hover:underline">
+                                                    Browse More Jobs
+                                                </Link>
+                                            </div>
+                                        )}
                                     </Card>
 
                                     {/* Job Recommendations */}

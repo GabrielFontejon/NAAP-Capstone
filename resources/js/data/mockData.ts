@@ -581,11 +581,43 @@ const generateMockApplications = (count: number) => {
 
         const status = getWeightedStatus();
 
-        // Correlate score somewhat with status
-        let baseScore = Math.floor(Math.random() * 60) + 40; // 40-99
-        if (status === 'Hired') baseScore = Math.floor(Math.random() * 10) + 90;
-        if (status === 'Shortlisted') baseScore = Math.floor(Math.random() * 15) + 80;
-        if (status === 'Rejected') baseScore = Math.floor(Math.random() * 50) + 30;
+        // Generate realistic AI score based on status
+        let targetScore = 0;
+        if (status === 'Hired') {
+            targetScore = 35 + Math.floor(Math.random() * 11); // 35-45
+        } else if (status === 'Shortlisted') {
+            targetScore = 28 + Math.floor(Math.random() * 13); // 28-40
+        } else if (status === 'Under Review') {
+            targetScore = 15 + Math.floor(Math.random() * 21); // 15-35
+        } else if (status === 'Rejected') {
+            targetScore = Math.floor(Math.random() * 26); // 0-25
+        } else {
+            targetScore = Math.floor(Math.random() * 46); // 0-45 for Submitted
+        }
+
+        // Ensure score doesn't exceed 45
+        targetScore = Math.min(45, targetScore);
+
+        // Distribute the score across components realistically
+        // Education: 0-5 (11% of max), Experience: 0-25 (56% of max), 
+        // Accomplishments: 0-5 (11% of max), Training: 0-10 (22% of max)
+        let educationScore = Math.min(5, Math.floor(targetScore * 0.11));
+        let experienceScore = Math.min(25, Math.floor(targetScore * 0.56));
+        let accomplishmentsScore = Math.min(5, Math.floor(targetScore * 0.11));
+
+        // Calculate remaining for training
+        let trainingScore = targetScore - educationScore - experienceScore - accomplishmentsScore;
+        trainingScore = Math.max(0, Math.min(10, trainingScore));
+
+        // Final check: ensure total doesn't exceed 45
+        let totalScore = educationScore + experienceScore + accomplishmentsScore + trainingScore;
+
+        // If somehow total exceeds 45, adjust by reducing training first, then others
+        if (totalScore > 45) {
+            const excess = totalScore - 45;
+            trainingScore = Math.max(0, trainingScore - excess);
+            totalScore = educationScore + experienceScore + accomplishmentsScore + trainingScore;
+        }
 
         // Date within last 180 days (6 months) for better trend data
         const daysAgo = Math.floor(Math.random() * 180);
@@ -593,16 +625,56 @@ const generateMockApplications = (count: number) => {
         date.setDate(date.getDate() - daysAgo);
         const dateStr = date.toISOString().split('T')[0];
 
+        // Generate realistic applicant data that matches the scores
+        // Education level based on education score
+        let educationLevel = 'bachelor';
+        if (educationScore === 5) educationLevel = 'doctoral_graduate';
+        else if (educationScore === 4) educationLevel = 'doctoral_27+';
+        else if (educationScore === 3) educationLevel = 'doctoral_18-24';
+        else if (educationScore === 2) educationLevel = 'masters';
+        else if (educationScore === 1) educationLevel = 'bachelor';
+
+        // Years of experience based on experience score (2 points per year above requirement)
+        const yearsOfExperience = Math.floor(experienceScore / 2);
+
+        // Awards based on accomplishments score
+        const awardsList = [];
+        if (accomplishmentsScore >= 4) awardsList.push('national', 'csc');
+        else if (accomplishmentsScore === 3) awardsList.push('national');
+        else if (accomplishmentsScore === 2) awardsList.push('csc');
+        else if (accomplishmentsScore === 1) awardsList.push('ngo');
+
+        // Training hours based on training score
+        let trainingHours = 0;
+        if (trainingScore === 10) trainingHours = 40 + Math.floor(Math.random() * 20); // 40+
+        else if (trainingScore === 5) trainingHours = 24 + Math.floor(Math.random() * 16); // 24-39
+        else if (trainingScore === 3) trainingHours = 8 + Math.floor(Math.random() * 16); // 8-23
+        else if (trainingScore === 1) trainingHours = 1 + Math.floor(Math.random() * 7); // 1-7
+
         apps.push({
             id: i,
             applicantName: `${firstName} ${lastName}`,
+            applicantEmail: `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(' ', '')}@example.com`,
             email: `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(' ', '')}@example.com`,
             phone: `09${Math.floor(Math.random() * 100)}-${Math.floor(Math.random() * 1000)}-${Math.floor(Math.random() * 10000)}`,
             jobTitle: jobTitle,
+            jobId: parseInt(randomJob.id),
             campus: campus,
             status: status,
             submittedDate: dateStr,
-            aiScore: baseScore,
+            aiScore: totalScore,
+            aiScoreBreakdown: {
+                education: educationScore,
+                experience: experienceScore,
+                accomplishments: accomplishmentsScore,
+                training: trainingScore
+            },
+            // AI scoring input fields for verification
+            educationLevel: educationLevel,
+            yearsOfExperience: yearsOfExperience,
+            awards: awardsList,
+            trainingHours: trainingHours,
+            // Legacy fields
             education: educationList[Math.floor(Math.random() * educationList.length)],
             experience: `${Math.floor(Math.random() * 10)} years experience`,
             skills: [
@@ -783,23 +855,27 @@ export const mockActivities = [
 ];
 
 // Helper to get merged jobs (Mock + LocalStorage)
-export const getJobs = () => {
+// Helper to get raw jobs list (Internal use)
+const getRawJobs = () => {
     if (typeof window === 'undefined') return mockJobs;
     try {
         const localJobs = JSON.parse(localStorage.getItem('mock_jobs_custom') || '[]');
         const archivedIds = JSON.parse(localStorage.getItem('mock_jobs_archived') || '[]');
-
-        // Filter out mock jobs that are either archived or have a local override
-        const activeMockJobs = mockJobs.filter(job =>
-            !archivedIds.includes(job.id) &&
-            !localJobs.some((lj: any) => lj.id === job.id)
-        );
-
+        const activeMockJobs = mockJobs.filter(job => !archivedIds.includes(job.id) && !localJobs.some((lj: any) => lj.id === job.id));
         return [...localJobs, ...activeMockJobs];
-    } catch (e) {
-        console.error("Error reading jobs from localStorage", e);
-        return mockJobs;
-    }
+    } catch (e) { return mockJobs; }
+};
+
+export const getJobs = () => {
+    const allJobs = getRawJobs();
+    const applications = getApplications();
+    return allJobs.map((job: any) => {
+        const safeJobId = parseInt(String(job.id)) || 0;
+        const applicantCount = applications.filter((app: any) =>
+            app.jobTitle === job.title || app.jobId === safeJobId
+        ).length;
+        return { ...job, applicantCount };
+    });
 };
 
 // Helper to get merged applications (Mock + LocalStorage)
@@ -814,7 +890,90 @@ export const getApplications = () => {
             !localApps.some((la: any) => la.id === app.id)
         );
 
-        return [...localApps, ...activeMockApps];
+        // Combine and sanitize scores, assign to variable first
+        const allProcessedApps = [...localApps, ...activeMockApps].map((app: any) => {
+            // Safety check: specific component caps
+            const education = Math.min(app.aiScoreBreakdown?.education || 0, 5);
+            const experience = Math.min(app.aiScoreBreakdown?.experience || 0, 25);
+            const accomplishments = Math.min(app.aiScoreBreakdown?.accomplishments || 0, 5);
+            const training = Math.min(app.aiScoreBreakdown?.training || 0, 10);
+
+            // Re-calculate strictly based on capped components
+            let total = education + experience + accomplishments + training;
+
+            // If the stored total is wildly different (like 98), likely using old logic. 
+            // We'll trust the capped components logic or hard cap the existing score.
+            let finalScore = Math.min(app.aiScore || 0, 45);
+
+            // If the breakdown sums up to something valid, prefer that to sync them
+            if (total <= 45 && total > 0) {
+                finalScore = total;
+            }
+
+            // --- BACKFILL MISSING DETAILS IF "DATA NOT AVAILABLE" ---
+
+            // 1. Education Level
+            let educationLevel = app.educationLevel;
+            if (!educationLevel) {
+                if (education >= 5) educationLevel = 'doctoral_graduate';
+                else if (education === 4) educationLevel = 'doctoral_27+';
+                else if (education === 3) educationLevel = 'doctoral_18-24';
+                else if (education === 2) educationLevel = 'masters';
+                else educationLevel = 'bachelor';
+            }
+
+            // 2. Years of Experience
+            let yearsOfExperience = app.yearsOfExperience;
+            if (yearsOfExperience === undefined || yearsOfExperience === null) {
+                // Approximate: 1 year experience = 1 point roughly
+                yearsOfExperience = Math.max(1, experience);
+            }
+
+            // 3. Awards
+            let awards = app.awards;
+            if (!awards || awards.length === 0) {
+                if (accomplishments > 0) {
+                    const possibleAwards = ['national', 'csc', 'president', 'ngo'];
+                    // Give them 'accomplishments' number of awards, up to length of possibleAwards
+                    awards = possibleAwards.slice(0, Math.min(accomplishments, 4));
+                } else {
+                    awards = [];
+                }
+            }
+
+            // 4. Training Hours
+            let trainingHours = app.trainingHours;
+            if (trainingHours === undefined || trainingHours === null) {
+                if (training >= 10) trainingHours = 45;
+                else if (training >= 5) trainingHours = 30;
+                else if (training >= 3) trainingHours = 15;
+                else if (training >= 1) trainingHours = 5;
+                else trainingHours = 0;
+            }
+
+            return {
+                ...app,
+                aiScore: finalScore,
+                aiScoreBreakdown: {
+                    education,
+                    experience,
+                    accomplishments,
+                    training
+                },
+                // Ensure these fields exist
+                educationLevel,
+                yearsOfExperience,
+                awards,
+                trainingHours
+            };
+        });
+
+        // Filter: Ensure consistency - only include apps for Open Jobs
+        const rawJobs = getRawJobs();
+        const openJobIds = new Set(rawJobs.filter((j: any) => j.status === 'Open').map((j: any) => String(j.id)));
+        const openJobTitles = new Set(rawJobs.filter((j: any) => j.status === 'Open').map((j: any) => j.title));
+
+        return allProcessedApps.filter((app: any) => openJobIds.has(String(app.jobId)) || openJobTitles.has(app.jobTitle));
     } catch (e) {
         console.error("Error reading from localStorage", e);
         return mockApplications;
@@ -872,17 +1031,27 @@ export const getAnalyticsData = (campus?: string) => {
     const allApplications = getApplications();
     const allJobs = getJobs();
 
+    // Filter out applicants for archived/deleted OR non-open jobs to match public job listings
+    const openJobs = allJobs.filter((j: any) => j.status === 'Open');
+    const activeIds = new Set(openJobs.map((j: any) => String(j.id)));
+    const activeTitles = new Set(openJobs.map((j: any) => j.title));
+
+    const validApps = allApplications.filter((app: any) =>
+        activeIds.has(String(app.jobId)) || activeTitles.has(app.jobTitle)
+    );
+
     // Filter by campus if provided
     const filteredApplications = campus
-        ? allApplications.filter(app => app.campus === campus)
-        : allApplications;
+        ? validApps.filter((app: any) => app.campus === campus)
+        : validApps;
 
     const filteredJobs = campus
         ? allJobs.filter(job => job.location === campus)
         : allJobs;
 
     // Dynamic calculations based on filtered data
-    const totalApplicants = filteredApplications.length;
+    const totalCount = Array.isArray(filteredApplications) ? filteredApplications.length : 0;
+    const totalApplicants = isNaN(totalCount) ? 0 : totalCount;
     const openPositions = filteredJobs.filter(job => job.status === 'Open').length;
     const pendingApplications = filteredApplications.filter(app => ['Submitted', 'Under Review'].includes(app.status)).length;
     const shortlistedCandidates = filteredApplications.filter(app => app.status === 'Shortlisted').length;
@@ -945,10 +1114,11 @@ export const getAnalyticsData = (campus?: string) => {
 
         // Data for "Applicants per Position" Bar Chart (Now dynamic)
         applicantsPerPosition: filteredJobs.map(job => {
-            const count = filteredApplications.filter(app => app.jobTitle === job.title).length;
+            const safeJobId = parseInt(String(job.id)) || 0;
+            const count = filteredApplications.filter(app => app.jobTitle === job.title || app.jobId === safeJobId).length;
             return {
                 position: job.title,
-                applicants: count
+                applicants: isNaN(count) ? 0 : count
             };
         }).sort((a, b) => b.applicants - a.applicants).slice(0, 5),
 
@@ -1116,10 +1286,7 @@ const defaultCMSContent: LandingPageContent = {
     perks: {
         title: "Perks",
         subtitle: "Employee Benefits & Rewards",
-        posts: [
-            { id: '1', title: 'Health & Wellness', description: 'Competitive health insurance for you and your family.' },
-            { id: '2', title: 'Continuous Training', description: 'Regular workshops and certifications to keep you sharp.' }
-        ]
+        posts: []
     },
     achievements: {
         title: "Level 2",
