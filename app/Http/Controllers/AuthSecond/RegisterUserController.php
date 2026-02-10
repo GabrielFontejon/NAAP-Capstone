@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;         // Added for return type
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;          // Added for Hash::make
 use Illuminate\Validation\Rules;              // Added for Password rules
+use Illuminate\Support\Facades\Auth;
 
 class RegisterUserController extends Controller
 {
@@ -29,7 +30,9 @@ class RegisterUserController extends Controller
 
         event(new Registered($user));
 
-        // Redirect to login with a success message
-        return redirect()->route('login')->with('message', 'Account created! Please log in.');
+        Auth::login($user);
+
+        // Redirect to dashboard (as per test expectation)
+        return redirect()->route('dashboard');
     }
 }

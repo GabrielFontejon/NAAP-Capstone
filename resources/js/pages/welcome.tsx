@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   Gift
 } from 'lucide-react';
-import { getJobs, getAnalyticsData, SALARY_GRADE_MAP, getLandingPageContent, getAnnouncements } from '@/data/mockData';
+import { getJobs, getAnalyticsData, SALARY_GRADE_MAP, getLandingPageContent, getAnnouncements, getApplications } from '@/data/mockData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 // --- CONFIGURATION: ANNOUNCEMENTS (Dynamic from mockData) ---
@@ -61,9 +61,10 @@ export default function Welcome() {
   const jobs = getJobs();
   const analytics = getAnalyticsData();
   const featuredJobs = jobs.filter((j: any) => j.status === 'Open').slice(0, 3);
-  const openPositionsCount = jobs.filter((j: any) => j.status === 'Open').length;
-  // Get hired count (fallback to default 500+ if count is low for visual impact)
-  const hiredCount = (analytics.applicationsByStatus?.find((s: any) => s.name === 'Hired')?.value || 0);
+  const allApps = getApplications();
+  const openPositionsCount = analytics.openPositions;
+  // Get all-time hired count (including closed jobs)
+  const hiredCount = allApps.filter((a: any) => a.status === 'Hired').length;
   const displayHired = hiredCount;
 
   const cmsContent = getLandingPageContent();
@@ -231,7 +232,8 @@ export default function Welcome() {
                     <div className="inline-flex p-4 rounded-full bg-emerald-50 mb-6 group-hover:bg-[#193153] group-hover:text-[#ffdd59] transition-colors duration-300">
                       <Users className="h-10 w-10 text-emerald-600 group-hover:text-[#ffdd59] transition-colors duration-300" />
                     </div>
-                    <h3 className="text-5xl font-bold text-gray-900 mb-2">10+</h3>
+                    <h3 className="text-5xl font-bold text-gray-900 mb-2">{displayHired}+</h3>
+
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Professionals Hired</p>
                   </CardContent>
                 </Card>
