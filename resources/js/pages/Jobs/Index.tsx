@@ -123,8 +123,17 @@ export default function JobListings({ auth }: JobIndexProps) {
                         )}
                     </div>
 
-                    <h1 className="text-4xl font-bold mb-2">Career Opportunities</h1>
-                    <p className="text-blue-200">Explore open positions at NAAP</p>
+                    {user && user.email === 'admin@naap.edu.ph' ? (
+                        <>
+                            <h1 className="text-4xl font-bold mb-2">Job Listings Preview</h1>
+                            <p className="text-blue-200">Viewing as Administrator</p>
+                        </>
+                    ) : (
+                        <>
+                            <h1 className="text-4xl font-bold mb-2">Career Opportunities</h1>
+                            <p className="text-blue-200">Explore open positions at NAAP</p>
+                        </>
+                    )}
                 </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, MapPin, Briefcase, Clock, Calendar, Users, CheckCircle, Upload, TrendingUp } from 'lucide-react';
+import { ArrowLeft, MapPin, Briefcase, Clock, Calendar, Users, CheckCircle, Upload, TrendingUp, Shield, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,10 @@ interface JobDetailsProps {
 
 export default function JobDetails({ id, auth }: JobDetailsProps) {
     const user = auth?.user;
+
+    // Find the job by ID from all jobs (mockJobs + localStorage)
+    const allJobs = getJobs();
+    const job = allJobs.find(j => j.id === id) || allJobs.find(j => j.id === String(id));
     const [hasApplied, setHasApplied] = useState(false);
     const [isApplyOpen, setIsApplyOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,13 +108,70 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                 "Performance Rating"
             ].forEach(doc => {
                 const status = localStorage.getItem(`doc_${doc}`);
-                if (status === 'uploaded') {
+                const hasContent = localStorage.getItem(`content_${doc}`);
+                const profileStatus = localStorage.getItem(`profile_doc_${doc}`);
+
+                // Only consider it manually loaded if content exists
+                if ((status === 'uploaded' && hasContent) || profileStatus === 'uploaded') {
                     docMap[doc] = true;
                 }
             });
             setAttachedDocs(docMap);
         }
     }, [isApplyOpen]);
+
+    // Simulate File Upload
+    // Simulate File Upload with Data URL storage for preview
+    const handleFileUpload = (docName: string, file: File) => {
+        // Limit file size for localStorage (e.g. 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error("File too large for demo storage (Limit: 2MB). Please use a smaller file.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target?.result as string;
+
+            // Simulating a slight delay
+            setTimeout(() => {
+                localStorage.setItem(`doc_${docName}`, 'uploaded');
+                localStorage.setItem(`file_${docName}`, file.name);
+                try {
+                    localStorage.setItem(`content_${docName}`, dataUrl);
+                } catch (e) {
+                    console.error("Storage full", e);
+                    toast.error("Local storage full. Cannot save file content for preview.");
+                }
+
+                setAttachedDocs(prev => ({ ...prev, [docName]: true }));
+                toast.success(`${docName} attached successfully`);
+            }, 500);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Check if user has already applied
+    useEffect(() => {
+        if (user && job) {
+            const checkApplicationStatus = () => {
+                // Get local custom applications
+                const localApps = JSON.parse(localStorage.getItem('mock_applications_custom') || '[]');
+
+                // Check if any application matches user email AND (job ID or job Title)
+                const hasAppliedLocally = localApps.some((app: any) =>
+                    app.applicantEmail === user.email &&
+                    (String(app.jobId) === String(job.id) || app.jobTitle === job.title)
+                );
+
+                if (hasAppliedLocally) {
+                    setHasApplied(true);
+                }
+            };
+
+            checkApplicationStatus();
+        }
+    }, [user, job]);
 
     const handleApplyClick = () => {
         if (!user) {
@@ -139,12 +200,45 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                 trainingHours: parseInt(formData.trainingHours) || 0
             });
 
+            // Capture uploaded documents
+            const uploadedDocsList = [
+                "Letter of Intent",
+                "Personal Data Sheet (PDS)",
+                "Work Experience Sheet",
+                "Certificate of Eligibility",
+                "Transcript of Records (TOR)",
+                "Training Certificates",
+                "Performance Rating"
+            ].filter(doc => (localStorage.getItem(`doc_${doc}`) === 'uploaded' && localStorage.getItem(`content_${doc}`)) || localStorage.getItem(`profile_doc_${doc}`) === 'uploaded')
+                .map(doc => {
+                    // Only treat as manual upload if we actually have the content stored
+                    const isManualUpload = localStorage.getItem(`doc_${doc}`) === 'uploaded' && localStorage.getItem(`content_${doc}`);
+                    // Fallback to profile check
+                    const isProfileUpload = localStorage.getItem(`profile_doc_${doc}`) === 'uploaded';
+
+                    // If neither (shouldn't happen due to filter), default to empty
+                    if (!isManualUpload && !isProfileUpload) return null;
+
+                    return {
+                        name: doc,
+                        url: isManualUpload
+                            ? (localStorage.getItem(`content_${doc}`) || '#')
+                            : (localStorage.getItem(`profile_content_${doc}`) || '#'),
+                        fileName: isManualUpload
+                            ? (localStorage.getItem(`file_${doc}`) || doc)
+                            : (localStorage.getItem(`profile_file_${doc}`) || doc),
+                        date: new Date().toISOString().split('T')[0]
+                    };
+                })
+                .filter(Boolean); // Remove nulls
+
             const newApplication = {
                 id: Date.now(), // Simple unique ID
                 applicantName: fullName,
                 applicantEmail: user.email, // Use logged in user's email for filtering
                 email: formData.email, // Email provided in the form
                 phone: formData.contactNumber,
+                jobId: job?.id,
                 jobTitle: job?.title || 'Unknown Position',
                 location: job?.location || 'Unknown Location',
                 status: 'Submitted',
@@ -164,7 +258,8 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                 education: 'College Graduate', // Placeholder
                 experience: 'See Resume',      // Placeholder
                 skills: ['Communication', 'Teamwork', 'Aviation Knowledge'], // Placeholder skills
-                resumeUrl: '#'
+                resumeUrl: '#',
+                documents: uploadedDocsList // Save documents array
             };
 
             // Save to localStorage
@@ -173,6 +268,9 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                 localStorage.setItem('mock_applications_custom', JSON.stringify([newApplication, ...existingApps]));
             } catch (error) {
                 console.error("Failed to save application locally", error);
+                toast.error("Application could not be saved to local storage (likely full). Please try clearing data or using smaller files.");
+                setIsSubmitting(false);
+                return;
             }
 
             setIsSubmitting(false);
@@ -181,12 +279,26 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
             toast.success("Application submitted successfully!", {
                 description: "We have received your documents and will review them shortly."
             });
+
+            // Cleanup local storage for uploads so next application is fresh
+            [
+                "Letter of Intent",
+                "Personal Data Sheet (PDS)",
+                "Work Experience Sheet",
+                "Certificate of Eligibility",
+                "Transcript of Records (TOR)",
+                "Training Certificates",
+                "Performance Rating"
+            ].forEach(doc => {
+                localStorage.removeItem(`doc_${doc}`);
+                localStorage.removeItem(`file_${doc}`);
+                localStorage.removeItem(`content_${doc}`);
+            });
+            setAttachedDocs({});
         }, 2000);
     };
 
-    // Find the job by ID from all jobs (mockJobs + localStorage)
-    const allJobs = getJobs();
-    const job = allJobs.find(j => j.id === id) || allJobs.find(j => j.id === String(id));
+
 
     if (!job) {
         return (
@@ -338,38 +450,63 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
 
                                 <Separator className="my-4" />
 
-                                {user ? (
-                                    hasApplied ? (
-                                        <Button
-                                            className="w-full bg-green-600 hover:bg-green-700 text-white mb-3 font-bold transition-colors cursor-default"
-                                            size="lg"
-                                        >
-                                            <CheckCircle className="w-5 h-5 mr-2" />
-                                            Applied
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            onClick={handleApplyClick}
-                                            className="w-full bg-[#193153] hover:bg-[#ffdd59] hover:text-[#193153] mb-3 font-bold transition-colors"
-                                            size="lg"
-                                        >
-                                            Apply Now
-                                        </Button>
-                                    )
+                                {user && user.email === 'admin@naap.edu.ph' ? (
+                                    // ADMIN VIEW
+                                    <div className="flex flex-col gap-3">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-2">
+                                            <p className="text-sm text-[#193153] font-semibold flex items-center">
+                                                <Shield className="w-4 h-4 mr-2" />
+                                                Admin View
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-1">
+                                                You are viewing this job as an administrator.
+                                            </p>
+                                        </div>
+                                        <Link href={`/admin/jobs?edit=${job.id}`}>
+                                            <Button
+                                                className="w-full bg-[#193153] hover:bg-[#ffdd59] hover:text-[#193153] mb-3 font-bold transition-colors"
+                                                size="lg"
+                                            >
+                                                <Edit className="w-4 h-4 mr-2" />
+                                                Edit Job Details
+                                            </Button>
+                                        </Link>
+                                    </div>
                                 ) : (
-                                    <Link href={`/login`}>
-                                        <Button
-                                            className="w-full bg-[#193153] hover:bg-[#ffdd59] hover:text-[#193153] mb-3 font-bold transition-colors"
-                                            size="lg"
-                                        >
-                                            Apply Now
-                                        </Button>
-                                    </Link>
+                                    // APPLICANT VIEW
+                                    user ? (
+                                        hasApplied ? (
+                                            <Button
+                                                className="w-full bg-green-600 hover:bg-green-700 text-white mb-3 font-bold transition-colors cursor-default"
+                                                size="lg"
+                                            >
+                                                <CheckCircle className="w-5 h-5 mr-2" />
+                                                Applied
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                onClick={handleApplyClick}
+                                                className="w-full bg-[#193153] hover:bg-[#ffdd59] hover:text-[#193153] mb-3 font-bold transition-colors"
+                                                size="lg"
+                                            >
+                                                Apply Now
+                                            </Button>
+                                        )
+                                    ) : (
+                                        <Link href={`/login`}>
+                                            <Button
+                                                className="w-full bg-[#193153] hover:bg-[#ffdd59] hover:text-[#193153] mb-3 font-bold transition-colors"
+                                                size="lg"
+                                            >
+                                                Apply Now
+                                            </Button>
+                                        </Link>
+                                    )
                                 )}
 
-                                <Link href={user ? "/dashboard" : "/login"}>
+                                <Link href={user && user.email === 'admin@naap.edu.ph' ? "/admin/jobs" : (user ? "/dashboard" : "/login")}>
                                     <Button variant="outline" className="w-full border-gray-300 text-gray-600 hover:text-[#193153] hover:border-[#193153]">
-                                        Track Your Application
+                                        {user && user.email === 'admin@naap.edu.ph' ? "Back to Job Management" : "Track Your Application"}
                                     </Button>
                                 </Link>
                             </CardContent>
@@ -717,33 +854,88 @@ export default function JobDetails({ id, auth }: JobDetailsProps) {
                                     "Transcript of Records (TOR)",
                                     "Relevant Training Certificates",
                                     "Performance Rating (IPCR/OPCR)"
-                                ].map((doc, i) => {
-                                    // Mapping document names for simple matching
-                                    const mapName = (name: string) => {
-                                        if (name.includes("PDS")) return "Personal Data Sheet (PDS)";
-                                        if (name.includes("Work Experience") && name.includes("Separate")) return "Work Experience Sheet";
-                                        if (name.includes("Training")) return "Training Certificates";
-                                        if (name.includes("Performance")) return "Performance Rating";
-                                        return name;
-                                    }
-                                    const simpleName = mapName(doc);
-                                    const isAttached = attachedDocs[simpleName] || attachedDocs[doc];
+                                ].map((docLabel, i) => {
+                                    // Mapping document names to storage keys
+                                    let storageKey = docLabel;
+                                    if (docLabel.includes("PDS")) storageKey = "Personal Data Sheet (PDS)";
+                                    else if (docLabel.includes("Work Experience")) storageKey = "Work Experience Sheet";
+                                    else if (docLabel.includes("Training")) storageKey = "Training Certificates";
+                                    else if (docLabel.includes("Performance")) storageKey = "Performance Rating";
+                                    else if (docLabel.includes("Letter of Intent")) storageKey = "Letter of Intent";
+                                    else if (docLabel.includes("Certificate of Eligibility")) storageKey = "Certificate of Eligibility";
+                                    else if (docLabel.includes("Transcript of Records")) storageKey = "Transcript of Records (TOR)";
+
+                                    const isAttached = attachedDocs[storageKey];
+
+                                    // Check for manual upload WITH content
+                                    const hasManualContent = localStorage.getItem(`doc_${storageKey}`) === 'uploaded' && localStorage.getItem(`content_${storageKey}`);
+                                    const isProfileAvailable = localStorage.getItem(`profile_doc_${storageKey}`) === 'uploaded';
 
                                     return (
                                         <div key={i} className={`space-y-2 border p-3 rounded-lg ${isAttached ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
                                             <div className="flex justify-between items-center">
-                                                <Label className="font-semibold text-gray-700">{doc} <span className="text-red-500">*</span></Label>
+                                                <Label className="font-semibold text-gray-700">{docLabel} <span className="text-red-500">*</span></Label>
                                                 {isAttached && (
                                                     <span className="text-[10px] font-bold text-green-700 bg-white px-2 py-0.5 rounded border border-green-200 flex items-center gap-1">
-                                                        <CheckCircle className="w-3 h-3" /> Attached from Profile
+                                                        <CheckCircle className="w-3 h-3" /> {hasManualContent ? 'Attached' : 'From Profile'}
                                                     </span>
                                                 )}
                                             </div>
                                             {!isAttached ? (
-                                                <Input type="file" required className="bg-white" />
+                                                <Input
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx,.jpg,.png"
+                                                    required
+                                                    className="bg-white"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            handleFileUpload(storageKey, file);
+                                                        }
+                                                    }}
+                                                />
                                             ) : (
-                                                <div className="text-xs text-gray-500 italic pl-1">
-                                                    File ready from your dashboard profile.
+                                                <div className="text-xs text-gray-500 italic pl-1 flex justify-between items-center">
+                                                    <span>{hasManualContent ? 'Ready to upload.' : 'Using profile document.'}</span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 text-red-500 hover:text-red-700 hover:bg-red-50 text-[10px]"
+                                                        onClick={() => {
+                                                            // Remove attachment simulation
+                                                            localStorage.removeItem(`doc_${storageKey}`);
+                                                            localStorage.removeItem(`file_${storageKey}`);
+                                                            localStorage.removeItem(`content_${storageKey}`);
+                                                            const newDocs = { ...attachedDocs };
+
+                                                            // If we remove manual, check if we should fall back to profile or remove completely from "attached" state
+                                                            // However, since `attachedDocs` is derived state on load, we should just trigger a reload or update state manually
+
+                                                            // If profile exists, we keep it as true in map, but UI updates because hasManualContent becomes false
+                                                            if (isProfileAvailable) {
+                                                                // Don't delete from newDocs, just let re-render handle badge change?
+                                                                // Actually, handleFileUpload sets state. Here we need to update state.
+                                                                // If profile is available, the document is STILL attached (just from profile)
+                                                                // But if the user clicks "Change" (which this button is), they might want to upload a new one.
+                                                                // If they click "Remove" (on a manual upload), they revert to profile or empty.
+
+                                                                // If it was manual, we remove manual keys.
+                                                                // If it was profile, we can't "remove" it here unless we have a "Don't use profile" option?
+                                                                // For simplicity, this button acts as "Reset / Change". 
+
+                                                                // If we delete from newDocs, the Input appears.
+                                                                delete newDocs[storageKey];
+                                                                setAttachedDocs(newDocs);
+                                                            } else {
+                                                                delete newDocs[storageKey];
+                                                                setAttachedDocs(newDocs);
+                                                            }
+                                                            toast.info("Attachment removed.");
+                                                        }}
+                                                    >
+                                                        {hasManualContent ? 'Remove' : 'Change'}
+                                                    </Button>
                                                 </div>
                                             )}
                                         </div>

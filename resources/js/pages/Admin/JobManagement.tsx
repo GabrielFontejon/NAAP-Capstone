@@ -55,6 +55,40 @@ export default function JobManagement({ auth }: { auth: any }) {
       // Clean up URL without reload
       window.history.replaceState({}, '', window.location.pathname);
     }
+
+    const editId = params.get('edit');
+    if (editId) {
+      const allJobs = getJobs();
+      const jobToEdit = allJobs.find((j: any) => String(j.id) === String(editId));
+      if (jobToEdit) {
+        // We need to wait a tick or call handleEdit directly, but handleEdit relies on state defined below?
+        // Actually, handleEdit is defined below this useEffect. We should move this logic or duplicated it.
+        // It is safer to duplicate the setting logic here to avoid hoisting issues dependent on definition order 
+        // or simply move the useEffect to after handleEdit definition.
+        // However, React function components hoist standard function definitions but consts are not hoisted.
+        // Let's just set the state directly here mirroring handleEdit.
+        setNewJob({
+          title: jobToEdit.title,
+          department: jobToEdit.department,
+          employmentType: jobToEdit.employmentType,
+          location: jobToEdit.location,
+          description: jobToEdit.description || '',
+          requirements: Array.isArray(jobToEdit.requirements) ? jobToEdit.requirements : [],
+          responsibilities: Array.isArray(jobToEdit.responsibilities) ? jobToEdit.responsibilities.join('\n') : (jobToEdit.responsibilities || ''),
+          salaryGrade: jobToEdit.salaryGrade || 1,
+          deadline: jobToEdit.deadline || '',
+          uploads: {
+            license: null,
+            certificates: null,
+            prc: null,
+            coe: null,
+          }
+        });
+        setEditingId(jobToEdit.id);
+        setIsCreating(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, []);
   const [newJob, setNewJob] = useState({
     title: '',
@@ -167,13 +201,11 @@ export default function JobManagement({ auth }: { auth: any }) {
       department: job.department,
       employmentType: job.employmentType,
       location: job.location,
-      description: job.description,
-      // @ts-ignore
-      requirements: job.requirements,
-      // @ts-ignore
-      responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : job.responsibilities,
+      description: job.description || '',
+      requirements: Array.isArray(job.requirements) ? job.requirements : [],
+      responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : (job.responsibilities || ''),
       salaryGrade: job.salaryGrade || 1,
-      deadline: job.deadline,
+      deadline: job.deadline || '',
       uploads: {
         license: null,
         certificates: null,

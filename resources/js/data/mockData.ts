@@ -649,7 +649,30 @@ const generateMockApplications = (count: number) => {
         if (trainingScore === 10) trainingHours = 40 + Math.floor(Math.random() * 20); // 40+
         else if (trainingScore === 5) trainingHours = 24 + Math.floor(Math.random() * 16); // 24-39
         else if (trainingScore === 3) trainingHours = 8 + Math.floor(Math.random() * 16); // 8-23
-        else if (trainingScore === 1) trainingHours = 1 + Math.floor(Math.random() * 7); // 1-7
+
+
+        // Generate mock documents
+        const documentTypes = [
+            'Letter of Intent',
+            'Personal Data Sheet (PDS)',
+            'Work Experience Sheet',
+            'Certificate of Eligibility',
+            'Transcript of Records (TOR)',
+            'Training Certificates',
+            'Performance Rating'
+        ];
+
+        const numDocs = 3 + Math.floor(Math.random() * 4); // 3 to 6 documents
+        const docs = [];
+        const shuffled = documentTypes.sort(() => 0.5 - Math.random());
+        for (let k = 0; k < numDocs; k++) {
+            docs.push({
+                name: shuffled[k],
+                url: '#', // Placeholder link
+                date: dateStr
+            });
+        }
+
 
         apps.push({
             id: i,
@@ -677,12 +700,14 @@ const generateMockApplications = (count: number) => {
             // Legacy fields
             education: educationList[Math.floor(Math.random() * educationList.length)],
             experience: `${Math.floor(Math.random() * 10)} years experience`,
+
             skills: [
                 skillsList[Math.floor(Math.random() * skillsList.length)],
                 skillsList[Math.floor(Math.random() * skillsList.length)],
                 skillsList[Math.floor(Math.random() * skillsList.length)]
             ],
-            resumeUrl: '#'
+            resumeUrl: '#',
+            documents: docs
         });
     }
     return apps.sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime());

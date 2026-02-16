@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'NAAP Admin',
             'email' => 'admin@naap.edu.ph',
-            'password' => bcrypt('password'),
+            'password' => 'password',
         ]);
 
         // Create test user
@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Gabriel Fontejon',
             'email' => 'gabriel1@gmail.com',
-            'password' => bcrypt('Gabriel123456'),
+            'password' => 'Gabriel123456',
         ]);
     }
 }

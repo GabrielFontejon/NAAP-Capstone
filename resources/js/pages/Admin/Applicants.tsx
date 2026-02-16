@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Shield, Users, LogOut, Search, Download, Star, Calendar, Eye, Edit, Trash, Plus, ChevronDown, ChevronUp, Briefcase, Layout, TrendingUp, GraduationCap, Award, BookOpen } from 'lucide-react';
+import { Shield, Users, LogOut, Search, Download, Star, Calendar, Eye, Edit, Trash, Plus, ChevronDown, ChevronUp, Briefcase, Layout, TrendingUp, GraduationCap, Award, BookOpen, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,8 @@ export default function Applicants({ auth }: { auth: any }) {
     const [venue, setVenue] = useState('');
     const [notifyApplicant, setNotifyApplicant] = useState(false);
     const [resultNotes, setResultNotes] = useState('');
+    const [candidateName, setCandidateName] = useState('');
+    const [position, setPosition] = useState('');
 
     // State to hold scheduled interviews - Initialize with Mock Data
     const [scheduledInterviews, setScheduledInterviews] = useState<any[]>(mockInterviews.map(m => ({
@@ -68,6 +70,15 @@ export default function Applicants({ auth }: { auth: any }) {
 
     // Collapsible State
     const [showInterviews, setShowInterviews] = useState(true);
+
+    // Document Viewer State
+    const [viewingDocument, setViewingDocument] = useState<{ name: string; url: string; fileName?: string } | null>(null);
+    const [isDocViewerOpen, setIsDocViewerOpen] = useState(false);
+
+    const handleViewDocument = (name: string, url: string, fileName?: string) => {
+        setViewingDocument({ name, url, fileName });
+        setIsDocViewerOpen(true);
+    };
 
     const handleLogout = () => {
         router.post('/logout');
@@ -121,7 +132,9 @@ export default function Applicants({ auth }: { auth: any }) {
 
     const filteredApplications = applications.filter(app => {
         const matchesSearch = app.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) || app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
+        const matchesStatus = statusFilter === 'all'
+            ? app.status !== 'Archived'
+            : app.status === statusFilter;
         const matchesAiMatch = aiMatchFilter === 'all' || getAiMatch(app.aiScore) === aiMatchFilter;
         const matchesCampus = campusFilter === 'all' || app.campus === campusFilter;
 
@@ -147,7 +160,9 @@ export default function Applicants({ auth }: { auth: any }) {
             panelMembers,
             venue,
             notifyApplicant,
-            resultNotes
+            resultNotes,
+            candidateName,
+            position
         };
 
         if (editingInterviewIndex !== null) {
@@ -175,6 +190,8 @@ export default function Applicants({ auth }: { auth: any }) {
         setNotifyApplicant(false);
         setResultNotes('');
         setEditingInterviewIndex(null);
+        setCandidateName('');
+        setPosition('');
     };
 
     const handleEditInterview = (index: number) => {
@@ -185,6 +202,8 @@ export default function Applicants({ auth }: { auth: any }) {
         setVenue(interview.venue);
         setNotifyApplicant(interview.notifyApplicant);
         setResultNotes(interview.resultNotes);
+        setCandidateName(interview.candidateName || '');
+        setPosition(interview.position || '');
         setEditingInterviewIndex(index);
         setIsInterviewModalOpen(true);
     };
@@ -316,6 +335,7 @@ export default function Applicants({ auth }: { auth: any }) {
                                     <SelectItem value="Shortlisted">Shortlisted</SelectItem>
                                     <SelectItem value="Rejected">Rejected</SelectItem>
                                     <SelectItem value="Hired">Hired</SelectItem>
+                                    <SelectItem value="Archived">Archived</SelectItem>
                                 </SelectContent>
                             </Select>
                             <Select value={campusFilter} onValueChange={setCampusFilter}>
@@ -393,10 +413,6 @@ export default function Applicants({ auth }: { auth: any }) {
                             <p className="text-sm text-gray-600">
                                 <span className="font-semibold">{filteredApplications.length}</span> applicants found
                             </p>
-                            <Button variant="outline" size="sm">
-                                <Download className="h-4 w-4 mr-2" />
-                                Export to CSV
-                            </Button>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -638,73 +654,139 @@ export default function Applicants({ auth }: { auth: any }) {
                                                     <DialogTrigger asChild>
                                                         <Button variant="outline" size="sm">View</Button>
                                                     </DialogTrigger>
-                                                    <DialogContent className="max-w-2xl">
+                                                    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle>Applicant Details</DialogTitle>
                                                         </DialogHeader>
-                                                        <div className="space-y-4">
-                                                            <div>
-                                                                <h4 className="font-semibold mb-2">Application Information</h4>
-                                                                <p><strong>Position:</strong> {app.jobTitle}</p>
-                                                                <p><strong>Campus:</strong> {app.campus}</p>
-                                                                <p><strong>Date Applied:</strong> {new Date(app.submittedDate).toLocaleDateString()}</p>
+                                                        <div className="space-y-4 text-sm">
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div className="space-y-1">
+                                                                    <h4 className="font-semibold text-gray-900">Application</h4>
+                                                                    <p className="flex justify-between"><span className="text-gray-500">Position:</span> <span>{app.jobTitle}</span></p>
+                                                                    <p className="flex justify-between"><span className="text-gray-500">Campus:</span> <span>{app.campus ? app.campus.replace('NAAP - ', '') : 'N/A'}</span></p>
+                                                                    <p className="flex justify-between"><span className="text-gray-500">Applied:</span> <span>{new Date(app.submittedDate).toLocaleDateString()}</span></p>
+                                                                </div>
+                                                                <div className="space-y-1">
+                                                                    <h4 className="font-semibold text-gray-900">Personal Info</h4>
+                                                                    <p className="flex justify-between"><span className="text-gray-500">Name:</span> <span className="font-medium">{app.applicantName}</span></p>
+                                                                    <p className="flex justify-between"><span className="text-gray-500">Email:</span> <span className="truncate w-32 text-right" title={app.email}>{app.email}</span></p>
+
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <h4 className="font-semibold mb-2">Personal Information</h4>
-                                                                <p><strong>Name:</strong> {app.applicantName}</p>
-                                                                <p><strong>Email:</strong> {app.email}</p>
-                                                                <p><strong>Phone:</strong> {app.phone}</p>
+
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div className="space-y-1">
+                                                                    <h4 className="font-semibold text-gray-900">Education</h4>
+                                                                    <p className="text-gray-700 leading-tight">{app.education}</p>
+                                                                </div>
+                                                                <div className="space-y-1">
+                                                                    <h4 className="font-semibold text-gray-900">Experience</h4>
+                                                                    <p className="text-gray-700 leading-tight">{app.experience}</p>
+                                                                </div>
                                                             </div>
+
                                                             <div>
-                                                                <h4 className="font-semibold mb-2">Education</h4>
-                                                                <p>{app.education}</p>
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="font-semibold mb-2">Experience</h4>
-                                                                <p>{app.experience}</p>
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="font-semibold mb-2">Skills</h4>
-                                                                <div className="flex flex-wrap gap-2">
+                                                                <h4 className="font-semibold text-gray-900 mb-1">Skills</h4>
+                                                                <div className="flex flex-wrap gap-1.5">
                                                                     {app.skills.map((skill: string, i: number) => (
-                                                                        <Badge key={i} variant="secondary">{skill}</Badge>
+                                                                        <Badge key={i} variant="secondary" className="text-xs px-1.5 py-0">{skill}</Badge>
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            <div>
-                                                                <h4 className="font-semibold mb-2">AI Analysis</h4>
-                                                                <div className="bg-blue-50 p-4 rounded">
-                                                                    <p className="text-sm mb-2">Match Score: <strong>{app.aiScore}%</strong></p>
-                                                                    <p className="text-sm mb-2">Classification: <strong>{getAiMatch(app.aiScore)}</strong></p>
-                                                                    <p className="text-sm text-gray-600">
-                                                                        This candidate has been automatically evaluated based on job requirements,
-                                                                        skills alignment, and experience level.
-                                                                    </p>
+
+                                                            <div className="space-y-2">
+                                                                <h4 className="font-semibold text-gray-900">Uploaded Documents</h4>
+                                                                <div className="grid grid-cols-1 gap-2">
+                                                                    {app.documents && app.documents.length > 0 ? (
+                                                                        app.documents.map((doc: any, i: number) => (
+                                                                            <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-100">
+                                                                                <div className="flex items-center overflow-hidden mr-2">
+                                                                                    <FileText className="flex-shrink-0 h-4 w-4 text-blue-500 mr-2" />
+                                                                                    <span className="text-sm text-gray-700 font-medium truncate">{doc.name}</span>
+                                                                                    {doc.fileName && (
+                                                                                        <span className="text-xs text-gray-500 ml-2 italic truncate max-w-[150px]">({doc.fileName})</span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="sm"
+                                                                                    className="h-6 w-6 p-0 hover:bg-blue-100"
+                                                                                    type="button"
+                                                                                    onClick={(e) => {
+                                                                                        e.preventDefault();
+                                                                                        e.stopPropagation();
+                                                                                        handleViewDocument(doc.name, doc.url || '#', doc.fileName);
+                                                                                    }}
+                                                                                >
+                                                                                    <Eye className="h-3 w-3 text-blue-600" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        ))
+                                                                    ) : (
+                                                                        <p className="text-xs text-gray-500 italic">No documents uploaded.</p>
+                                                                    )}
                                                                 </div>
                                                             </div>
-                                                            <div className="flex gap-2">
+
+                                                            <div className="bg-blue-50 p-3 rounded-md">
+                                                                <div className="flex justify-between items-center mb-1">
+                                                                    <h4 className="font-semibold text-blue-900 text-xs uppercase tracking-wide">AI Analysis</h4>
+                                                                    <Badge variant="outline" className="bg-white text-blue-700 border-blue-200">{app.aiScore}% Match</Badge>
+                                                                </div>
+                                                                <p className="text-xs text-blue-800 leading-relaxed">
+                                                                    <span className="font-medium">{getAiMatch(app.aiScore)}:</span> Evaluation based on skills alignment and experience.
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="flex gap-2 pt-2 border-t mt-2">
                                                                 <Button
+                                                                    size="sm"
                                                                     className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                                                                     onClick={() => {
                                                                         handleStatusUpdate(app.id, 'Shortlisted');
-                                                                        // Optionally open interview modal here too
                                                                     }}
                                                                 >
                                                                     Shortlist
                                                                 </Button>
                                                                 <Button
+                                                                    size="sm"
                                                                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                                                                     onClick={() => handleStatusUpdate(app.id, 'Hired')}
                                                                 >
                                                                     Hire
                                                                 </Button>
                                                                 <Button
+                                                                    size="sm"
                                                                     variant="destructive"
                                                                     className="flex-1"
                                                                     onClick={() => handleStatusUpdate(app.id, 'Rejected')}
                                                                 >
                                                                     Reject
                                                                 </Button>
+                                                            </div>
+                                                            <div className="pt-2 border-t flex flex-col gap-2">
+                                                                <div className="flex gap-2">
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="flex-1 border-gray-300 text-gray-500 hover:bg-gray-100"
+                                                                        onClick={() => handleStatusUpdate(app.id, 'Archived')}
+                                                                    >
+                                                                        <Trash className="mr-2 h-3.5 w-3.5" />
+                                                                        Archive
+                                                                    </Button>
+                                                                    <Button
+                                                                        className="flex-[2] bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                                                                        onClick={() => {
+                                                                            setCandidateName(app.applicantName);
+                                                                            setPosition(app.jobTitle);
+                                                                            setIsInterviewModalOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        <Calendar className="mr-2 h-4 w-4" />
+                                                                        Schedule Interview
+                                                                    </Button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </DialogContent>
@@ -731,6 +813,18 @@ export default function Applicants({ auth }: { auth: any }) {
                             <DialogTitle>{editingInterviewIndex !== null ? "Edit Interview" : "Schedule Interview"}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input
+                                    placeholder="Candidate Name"
+                                    value={candidateName}
+                                    onChange={(e) => setCandidateName(e.target.value)}
+                                />
+                                <Input
+                                    placeholder="Position"
+                                    value={position}
+                                    onChange={(e) => setPosition(e.target.value)}
+                                />
+                            </div>
                             <Input
                                 type="date"
                                 placeholder="Interview Date"
@@ -891,6 +985,57 @@ export default function Applicants({ auth }: { auth: any }) {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Document Viewer Modal */}
+            <Dialog open={isDocViewerOpen} onOpenChange={setIsDocViewerOpen}>
+                <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+                    <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                            {viewingDocument?.name || 'Document Viewer'}
+                            {viewingDocument?.fileName && <span className="text-sm font-normal text-gray-500 ml-2">({viewingDocument.fileName})</span>}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 bg-gray-100 p-4 overflow-hidden flex items-center justify-center relative">
+                        {/* Real File Viewer */}
+                        {viewingDocument?.url && viewingDocument.url.startsWith('data:') ? (
+                            viewingDocument.url.startsWith('data:image') ? (
+                                <img
+                                    src={viewingDocument.url}
+                                    alt={viewingDocument.name}
+                                    className="max-w-full max-h-full object-contain shadow-lg border border-gray-300 rounded-md bg-white"
+                                />
+                            ) : (
+                                <iframe
+                                    src={viewingDocument.url}
+                                    className="w-full h-full shadow-lg border border-gray-300 rounded-md bg-white"
+                                    title={viewingDocument.name}
+                                />
+                            )
+                        ) : (
+                            /* Mock PDF Viewer / Placeholder */
+                            <div className="bg-white shadow-lg w-full h-full p-8 flex flex-col items-center justify-center border border-gray-300 rounded-md">
+                                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                                    <FileText className="h-12 w-12 text-gray-400" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-2">{viewingDocument?.name}</h3>
+                                <p className="text-gray-500 mb-8 max-w-md text-center">
+                                    This is a simulation of the uploaded document content within the secure admin portal.
+                                </p>
+                                <div className="flex gap-4">
+                                    <Button variant="outline" onClick={() => setIsDocViewerOpen(false)}>
+                                        Close Preview
+                                    </Button>
+                                    <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Download File
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Footer */}
             <footer className="bg-[#193153] text-white py-6 border-t border-white/10 mt-auto">

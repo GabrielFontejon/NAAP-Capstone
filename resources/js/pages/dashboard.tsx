@@ -25,9 +25,12 @@ import {
     ChevronRight,
     AlertCircle,
     Ban,
-    Camera
+    Camera,
+    Eye,
+    Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { mockApplications, mockEvents, getApplications, getDynamicNotifications, getJobs } from '@/data/mockData';
 
 // --- SHARED COMPONENTS ---
@@ -356,6 +359,8 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
         }
     };
 
+    const [viewingDocument, setViewingDocument] = useState<{ name: string; url: string; fileName?: string } | null>(null);
+
     // Use mock data for prototype, merged with local submissions
     const [myApplications, setMyApplications] = useState<Application[]>(() => {
         let localApps: any[] = [];
@@ -462,6 +467,24 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
         }
     };
 
+    const handleDelete = (id: number) => {
+        if (confirm("Are you sure you want to permanently delete this application? This action cannot be undone.")) {
+            // Remove from state
+            const updatedApps = myApplications.filter(app => app.id !== id);
+            setMyApplications(updatedApps);
+
+            // Remove from localStorage
+            const localApps = JSON.parse(localStorage.getItem('mock_applications_custom') || '[]');
+            const updatedLocalApps = localApps.filter((app: any) => app.id !== id);
+            localStorage.setItem('mock_applications_custom', JSON.stringify(updatedLocalApps));
+
+            // Trigger sync event
+            window.dispatchEvent(new StorageEvent('storage', { key: 'mock_applications_custom' }));
+
+            toast.success("Application deleted permanently.");
+        }
+    };
+
     const handleLogout = () => {
         router.post('/logout');
     };
@@ -473,6 +496,7 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
             'Under Review': 'bg-yellow-100 text-yellow-700 border-yellow-200',
             'Hired': 'bg-emerald-100 text-emerald-700 border-emerald-200',
             'Rejected': 'bg-red-100 text-red-700 border-red-200',
+            'Withdrawn': 'bg-gray-100 text-gray-700 border-gray-200',
         };
         const icons: Record<string, any> = {
             'Submitted': Clock,
@@ -796,14 +820,21 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
                                                                     <ChevronRight className="w-5 h-5" />
                                                                 </Button>
                                                             </Link>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                                onClick={() => handleWithdraw(app.id)}
-                                                            >
-                                                                <LogOut className="w-4 h-4" />
-                                                            </Button>
+                                                            {app.status === 'Withdrawn' ? (
+                                                                <Trash2
+                                                                    className="w-4 h-4 text-red-500 hover:text-red-700 cursor-pointer transition-colors"
+                                                                    onClick={() => handleDelete(app.id)}
+                                                                />
+                                                            ) : (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                    onClick={() => handleWithdraw(app.id)}
+                                                                >
+                                                                    <LogOut className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -960,11 +991,33 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
                                             onChange={handleImageUpload}
                                         />
                                     </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">{profileData.fullName}</h2>
-                                        <p className="text-gray-500 flex items-center gap-2 mt-1">
-                                            <Mail className="w-4 h-4" /> {profileData.email}
-                                        </p>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-gray-900">{profileData.fullName}</h2>
+                                                <p className="text-gray-500 flex items-center gap-2 mt-1">
+                                                    <Mail className="w-4 h-4" /> {profileData.email}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="text-red-500 border-red-200 hover:bg-red-50"
+                                                onClick={() => {
+                                                    if (confirm("Are you sure? This will remove ALL your submitted applications. This action cannot be undone.")) {
+                                                        const allApps = JSON.parse(localStorage.getItem('mock_applications_custom') || '[]');
+                                                        const otherApps = allApps.filter((app: any) => app.applicantEmail !== user.email);
+                                                        localStorage.setItem('mock_applications_custom', JSON.stringify(otherApps));
+                                                        setMyApplications([]);
+                                                        toast.success("All applications have been reset.");
+                                                        window.dispatchEvent(new StorageEvent('storage', { key: 'mock_applications_custom' }));
+                                                    }
+                                                }}
+                                            >
+                                                <LogOut className="w-4 h-4 mr-2" />
+                                                Reset My Applications
+                                            </Button>
+                                        </div>
                                         <div className="flex gap-2 mt-3">
                                             {// Toggle between Edit and Save/Cancel
                                                 isEditingProfile ? (
@@ -1120,25 +1173,78 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
                                                         <div className={`${doc.bg} p-2 rounded ${doc.color}`}>
                                                             <doc.icon className="w-4 h-4" />
                                                         </div>
-                                                        <span className="text-sm font-medium">{doc.name}</span>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium">{doc.name}</span>
+                                                            {localStorage.getItem(`profile_file_${doc.name}`) && (
+                                                                <span className="text-[10px] text-gray-500 truncate max-w-[150px]">
+                                                                    {localStorage.getItem(`profile_file_${doc.name}`)}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        {/* Simulated Upload Logic */}
-                                                        {localStorage.getItem(`doc_${doc.name}`) === 'uploaded' ? (
-                                                            <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">Uploaded</span>
+                                                        {/* Persistent Profile Storage Logic */}
+                                                        {localStorage.getItem(`profile_doc_${doc.name}`) === 'uploaded' ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">Saved</span>
+                                                                <Eye
+                                                                    className="w-4 h-4 text-[#193153] hover:text-[#193153]/70 cursor-pointer transition-colors"
+                                                                    onClick={() => {
+                                                                        const content = localStorage.getItem(`profile_content_${doc.name}`);
+                                                                        const fileName = localStorage.getItem(`profile_file_${doc.name}`) || doc.name;
+                                                                        if (content) {
+                                                                            setViewingDocument({
+                                                                                name: doc.name,
+                                                                                url: content,
+                                                                                fileName: fileName
+                                                                            });
+                                                                        } else {
+                                                                            toast.error("File content missing.");
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Trash2
+                                                                    className="w-4 h-4 text-red-400 hover:text-red-600 cursor-pointer transition-colors"
+                                                                    onClick={() => {
+                                                                        localStorage.removeItem(`profile_doc_${doc.name}`);
+                                                                        localStorage.removeItem(`profile_file_${doc.name}`);
+                                                                        localStorage.removeItem(`profile_content_${doc.name}`);
+                                                                        setProfileData({ ...profileData }); // Trigger re-render
+                                                                        toast.info(`${doc.name} removed from profile.`);
+                                                                    }}
+                                                                />
+                                                            </div>
                                                         ) : (
                                                             <span className="text-xs text-gray-400 italic">Missing</span>
                                                         )}
                                                         <input
                                                             type="file"
-                                                            id={`file-${i}`}
+                                                            id={`file-profile-${i}`}
                                                             className="hidden"
                                                             onChange={(e) => {
-                                                                if (e.target.files?.[0]) {
-                                                                    localStorage.setItem(`doc_${doc.name}`, 'uploaded');
-                                                                    toast.success(`${doc.name} uploaded successfully!`);
-                                                                    // Force re-render trick (in real app, use state)
-                                                                    setProfileData({ ...profileData });
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    if (file.size > 2 * 1024 * 1024) {
+                                                                        toast.error("File too large (>2MB). Please upload a smaller file.");
+                                                                        return;
+                                                                    }
+
+                                                                    const reader = new FileReader();
+                                                                    reader.onload = (ev) => {
+                                                                        try {
+                                                                            const result = ev.target?.result as string;
+                                                                            localStorage.setItem(`profile_doc_${doc.name}`, 'uploaded');
+                                                                            localStorage.setItem(`profile_file_${doc.name}`, file.name);
+                                                                            localStorage.setItem(`profile_content_${doc.name}`, result);
+
+                                                                            toast.success(`${doc.name} saved to profile!`);
+                                                                            setProfileData({ ...profileData }); // Trigger re-render
+                                                                        } catch (err) {
+                                                                            console.error(err);
+                                                                            toast.error("Storage full. Could not save file to profile.");
+                                                                        }
+                                                                    };
+                                                                    reader.readAsDataURL(file);
                                                                 }
                                                             }}
                                                         />
@@ -1146,9 +1252,9 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
                                                             size="sm"
                                                             variant="ghost"
                                                             className="h-8 text-xs hover:bg-blue-50 hover:text-blue-600"
-                                                            onClick={() => document.getElementById(`file-${i}`)?.click()}
+                                                            onClick={() => document.getElementById(`file-profile-${i}`)?.click()}
                                                         >
-                                                            Upload
+                                                            {localStorage.getItem(`profile_doc_${doc.name}`) === 'uploaded' ? 'Update' : 'Upload'}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -1187,6 +1293,45 @@ export default function ApplicantDashboard({ auth }: DashboardProps) {
                         </div>
                     </div>
                 </footer>
+
+                <Dialog open={!!viewingDocument} onOpenChange={(open) => !open && setViewingDocument(null)}>
+                    <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+                        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+                            <DialogTitle className="flex items-center gap-2">
+                                <FileText className="h-5 w-5 text-blue-600" />
+                                {viewingDocument?.name || 'Document Viewer'}
+                                {viewingDocument?.fileName && <span className="text-sm font-normal text-gray-500 ml-2">({viewingDocument.fileName})</span>}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="flex-1 bg-gray-100 p-4 overflow-hidden flex items-center justify-center relative">
+                            {viewingDocument?.url && viewingDocument.url.startsWith('data:') ? (
+                                viewingDocument.url.startsWith('data:image') ? (
+                                    <img
+                                        src={viewingDocument.url}
+                                        alt={viewingDocument.name}
+                                        className="max-w-full max-h-full object-contain shadow-lg border border-gray-300 rounded-md bg-white"
+                                    />
+                                ) : (
+                                    <iframe
+                                        src={viewingDocument.url}
+                                        className="w-full h-full shadow-lg border border-gray-300 rounded-md bg-white"
+                                        title={viewingDocument.name}
+                                    />
+                                )
+                            ) : (
+                                <div className="bg-white shadow-lg w-full h-full p-8 flex flex-col items-center justify-center border border-gray-300 rounded-md">
+                                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                                        <FileText className="h-12 w-12 text-gray-400" />
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{viewingDocument?.name}</h3>
+                                    <p className="text-gray-500 mb-8 max-w-md text-center">
+                                        Unable to preview document content.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
             </div>
         </>

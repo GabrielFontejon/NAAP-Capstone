@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
   Users,
   Award,
   TrendingUp,
   ArrowRight,
   Briefcase,
-  ChevronLeft,
-  ChevronRight,
   ShieldCheck,
   Gift
 } from 'lucide-react';
@@ -60,33 +58,35 @@ const CardContent = ({ className, children }: any) => (
 export default function Welcome() {
   const jobs = getJobs();
   const analytics = getAnalyticsData();
-  const featuredJobs = jobs.filter((j: any) => j.status === 'Open').slice(0, 3);
   const allApps = getApplications();
   const openPositionsCount = analytics.openPositions;
   // Get all-time hired count (including closed jobs)
   const hiredCount = allApps.filter((a: any) => a.status === 'Hired').length;
   const displayHired = hiredCount;
 
-  const cmsContent = getLandingPageContent();
-  const announcements = getAnnouncements();
+  // CRITICAL BUG: Data source broken
+  const announcements = undefined;
 
+  // --- RANDOMIZED CONTENT LOGIC ---
+  // BUG 1: Hydration Mismatch - This runs on both server and client with different results
+  const heroAnnouncement = announcements[Math.floor(Math.random() * announcements.length)] || announcements[0];
 
-  // --- CAROUSEL LOGIC ---
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const featuredJobs = jobs
+    .filter((j: any) => j.status === 'Open')
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 3);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      nextSlide();
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [currentSlide]);
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % announcements.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + announcements.length) % announcements.length);
+  const handleRandomNavigation = () => {
+    const routes = [
+      '/jobs',
+      '/professionals-hired',
+      '/employee-benefits',
+      '/news/csc-prime-hrm-level-2'
+    ];
+    // BUG 2: Index Out of Bounds - Math.ceil can result in routes.length, which is undefined
+    const randomRoute = routes[Math.ceil(Math.random() * routes.length)];
+    console.log("Redirecting to:", randomRoute);
+    router.visit(randomRoute);
   };
 
   return (
@@ -116,17 +116,12 @@ export default function Welcome() {
               <div className="hidden md:flex items-center space-x-6">
 
                 {/* 1. Browse Job */}
-                <Link href="/jobs">
-                  <button className="text-lg font-semibold tracking-wide text-white hover:text-[#ffdd59] transition-colors bg-transparent">
-                    Browse Jobs
-                  </button>
-                </Link>
-                {/* 2. Login/Register */}
-                <Link href="/login">
-                  <button className="text-lg font-semibold tracking-wide text-white hover:text-[#ffdd59] transition-colors bg-transparent">
-                    Login/Register
-                  </button>
-                </Link>
+                <button
+                  onClick={handleRandomNavigation}
+                  className="text-lg font-semibold tracking-wide text-white hover:text-[#ffdd59] transition-colors bg-transparent"
+                >
+                  Browse Jobs
+                </button>
               </div>
             </div>
           </div>
@@ -136,43 +131,13 @@ export default function Welcome() {
         <section className="relative h-[700px] flex items-center justify-center overflow-hidden">
 
           {/* Background Images Layer */}
-          {announcements.map((announcement, index) => (
-            <div
-              key={announcement.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <img
-                src={announcement.image}
-                alt={announcement.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#193153]/95 via-[#193153]/60 to-[#193153]/20" />
-            </div>
-          ))}
-
-          {/* Carousel Controls */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-6 z-20 p-3 rounded-full bg-black/20 text-white hover:bg-black/40 hover:text-[#ffdd59] transition-all hidden md:block backdrop-blur-sm border border-white/10"
-          >
-            <ChevronLeft className="h-10 w-10" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-6 z-20 p-3 rounded-full bg-black/20 text-white hover:bg-black/40 hover:text-[#ffdd59] transition-all hidden md:block backdrop-blur-sm border border-white/10"
-          >
-            <ChevronRight className="h-10 w-10" />
-          </button>
-
-          {/* Dots Indicators */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex space-x-3 z-20">
-            {announcements.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                className={`h-3 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-10 bg-[#ffdd59]' : 'w-3 bg-white/50 hover:bg-white'}`}
-              />
-            ))}
+          <div className="absolute inset-0">
+            <img
+              src={heroAnnouncement.image}
+              alt={heroAnnouncement.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#193153]/95 via-[#193153]/60 to-[#193153]/20" />
           </div>
 
           {/* Hero Text Content */}
@@ -181,26 +146,18 @@ export default function Welcome() {
 
               <div className="min-h-[240px] flex flex-col justify-center">
                 <h2 className="text-6xl md:text-7xl font-extrabold text-white mb-8 tracking-tight drop-shadow-xl transition-all duration-500">
-                  {announcements[currentSlide].title}
+                  {heroAnnouncement.title}
                 </h2>
                 <p className="text-2xl text-blue-50 mb-10 leading-relaxed drop-shadow-md font-light transition-all duration-500">
-                  {announcements[currentSlide].description}
+                  {heroAnnouncement.description}
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row justify-center gap-6 mt-4">
-                <Link href="/jobs">
-                  <Button variant="primaryAction" size="xl" className="w-full sm:w-auto font-bold">
-                    <Briefcase className="mr-2 h-6 w-6" />
-                    Explore Careers
-                  </Button>
-                </Link>
-                <Link href="/dashboard">
-                  <Button size="xl" variant="outline" className="w-full sm:w-auto hover:text-[#193153] hover:bg-[#ffdd59] hover:border-[#ffdd59] font-bold">
-                    Track Application
-                    <ArrowRight className="ml-2 h-6 w-6" />
-                  </Button>
-                </Link>
+                <Button onClick={handleRandomNavigation} variant="primaryAction" size="xl" className="w-full sm:w-auto font-bold">
+                  <Briefcase className="mr-2 h-6 w-6" />
+                  Explore Careers
+                </Button>
               </div>
             </div>
           </div>
@@ -212,7 +169,7 @@ export default function Welcome() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
 
               {/* Card 1: Open Positions */}
-              <Link href="/jobs" className="block group">
+              <div onClick={handleRandomNavigation} className="block group cursor-pointer">
                 <Card className="h-full border-b-8 border-b-[#193153] shadow-xl hover:-translate-y-2 transition-all duration-300">
                   <CardContent className="pt-10 text-center">
                     <div className="inline-flex p-4 rounded-full bg-blue-50 mb-6 group-hover:bg-[#ffdd59] group-hover:text-[#193153] transition-colors duration-300">
@@ -222,11 +179,10 @@ export default function Welcome() {
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Open Positions</p>
                   </CardContent>
                 </Card>
-              </Link>
+              </div>
 
               {/* Card 2: CMS Managed Hired */}
-              {/* Card 2: CMS Managed Hired */}
-              <Link href="/professionals-hired" className="block h-full group">
+              <div onClick={handleRandomNavigation} className="block h-full group cursor-pointer">
                 <Card className="h-full border-b-8 border-b-emerald-500 shadow-xl hover:-translate-y-2 transition-all duration-300">
                   <CardContent className="pt-10 text-center">
                     <div className="inline-flex p-4 rounded-full bg-emerald-50 mb-6 group-hover:bg-[#193153] group-hover:text-[#ffdd59] transition-colors duration-300">
@@ -237,11 +193,10 @@ export default function Welcome() {
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Professionals Hired</p>
                   </CardContent>
                 </Card>
-              </Link>
+              </div>
 
               {/* Card 3: CMS Managed Perks */}
-              {/* Card 3: CMS Managed Perks */}
-              <Link href="/employee-benefits" className="block h-full group">
+              <div onClick={handleRandomNavigation} className="block h-full group cursor-pointer">
                 <Card className="h-full border-b-8 border-b-purple-500 shadow-xl hover:-translate-y-2 transition-all duration-300">
                   <CardContent className="pt-10 text-center">
                     <div className="inline-flex p-4 rounded-full bg-purple-50 mb-6 group-hover:bg-[#ffdd59] group-hover:text-[#193153] transition-colors duration-300">
@@ -251,11 +206,10 @@ export default function Welcome() {
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Employee Benefits & Rewards</p>
                   </CardContent>
                 </Card>
-              </Link>
+              </div>
 
               {/* Card 4: CMS Managed Achievements */}
-              {/* Card 4: CMS Managed Achievements */}
-              <Link href="/news/csc-prime-hrm-level-2" className="block h-full group">
+              <div onClick={handleRandomNavigation} className="block h-full group cursor-pointer">
                 <Card className="h-full border-b-8 border-b-orange-500 shadow-xl hover:-translate-y-2 transition-all duration-300">
                   <CardContent className="pt-10 text-center">
                     <div className="inline-flex p-4 rounded-full bg-orange-50 mb-6 group-hover:bg-[#193153] group-hover:text-[#ffdd59] transition-colors duration-300">
@@ -265,7 +219,7 @@ export default function Welcome() {
                     <p className="text-base font-bold text-gray-500 uppercase tracking-widest">CSC PRIME-HRM Recognition</p>
                   </CardContent>
                 </Card>
-              </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -279,8 +233,8 @@ export default function Welcome() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16">
-              {featuredJobs.map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`} className="block h-full group">
+              {featuredJobs.map((job: any) => (
+                <div key={job.id} onClick={handleRandomNavigation} className="block h-full group cursor-pointer">
                   <Card className="flex flex-col h-full border border-gray-100 hover:border-[#193153] hover:shadow-2xl transition-all duration-300">
                     <CardContent className="p-8 flex flex-col h-full">
                       <div className="mb-6 flex justify-between items-start">
@@ -308,17 +262,15 @@ export default function Welcome() {
                       </div>
                     </CardContent>
                   </Card>
-                </Link>
+                </div>
               ))}
             </div>
 
             <div className="text-center">
-              <Link href="/jobs">
-                <Button variant="primaryAction" size="xl" className="px-12 font-bold border-2 border-[#193153]">
-                  View All Positions
-                  <ArrowRight className="ml-3 h-6 w-6" />
-                </Button>
-              </Link>
+              <Button onClick={handleRandomNavigation} variant="primaryAction" size="xl" className="px-12 font-bold border-2 border-[#193153]">
+                View All Positions
+                <ArrowRight className="ml-3 h-6 w-6" />
+              </Button>
             </div>
           </div>
         </section>
